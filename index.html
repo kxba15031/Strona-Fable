@@ -22,9 +22,14 @@
       <span class="brand-name">Grosik</span>
     </a>
     <span class="month" id="monthLabel"></span>
+    <nav class="tabs" role="tablist" aria-label="Sekcje">
+      <button type="button" class="tab active" role="tab" id="tab-budget" data-view="budget" aria-selected="true" aria-controls="view-budget">Budżet</button>
+      <button type="button" class="tab" role="tab" id="tab-shop" data-view="shop" aria-selected="false" aria-controls="view-shop">Zakupy</button>
+    </nav>
   </header>
 
-  <main class="layout" id="top">
+  <main id="top">
+  <div class="layout" id="view-budget" role="tabpanel" aria-labelledby="tab-budget">
     <!-- Podsumowanie -->
     <section class="hero reveal" aria-labelledby="heroTitle">
       <div class="hero-shine" aria-hidden="true"></div>
@@ -170,6 +175,95 @@
         <ul class="legend" id="legend"></ul>
       </div>
     </section>
+  </div>
+
+  <div class="layout" id="view-shop" role="tabpanel" aria-labelledby="tab-shop" hidden>
+    <!-- Podsumowanie zakupów -->
+    <section class="hero reveal" aria-labelledby="shopHeroTitle">
+      <div class="hero-shine" aria-hidden="true"></div>
+      <p class="hero-label" id="shopHeroTitle">Szacowany koszt zakupów</p>
+      <p class="hero-amount" id="shopTotal">0,00 zł</p>
+      <div class="meter" role="img" aria-label="Ile z listy jest już w koszyku">
+        <div class="meter-fill" id="shopMeter"></div>
+      </div>
+      <p class="meter-note" id="shopNote">Dodaj pierwszy produkt do listy</p>
+      <div class="hero-stats">
+        <div class="stat">
+          <span class="stat-label">Do kupienia</span>
+          <span class="stat-value" id="shopToBuy">0 zł</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">W koszyku</span>
+          <span class="stat-value" id="shopDone">0 zł</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Zostanie Ci</span>
+          <span class="stat-value" id="shopAfter">–</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Lista zakupów -->
+    <section class="card reveal" aria-labelledby="shopTitle">
+      <div class="card-head">
+        <span class="icon icon-green" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M4 5h2l2 11h10l2-8H7 M9 20h.01 M17 20h.01"/></svg>
+        </span>
+        <div>
+          <h2 id="shopTitle">Lista zakupów</h2>
+          <p class="sub">Cenę podpowiem sam – możesz ją zawsze poprawić</p>
+        </div>
+      </div>
+
+      <form class="add-form" id="shopForm" novalidate>
+        <label class="field field-wide">
+          <span>Produkt</span>
+          <div class="input-wrap">
+            <input id="shopName" type="text" placeholder="np. Mleko" maxlength="40" autocomplete="off" list="shopHints">
+            <datalist id="shopHints"></datalist>
+          </div>
+        </label>
+        <label class="field">
+          <span>Ilość</span>
+          <div class="input-wrap">
+            <input id="shopQty" type="text" inputmode="decimal" value="1" autocomplete="off">
+            <em>szt.</em>
+          </div>
+        </label>
+        <label class="field">
+          <span>Cena za sztukę</span>
+          <div class="input-wrap">
+            <input id="shopPrice" type="text" inputmode="decimal" placeholder="szacuję…" autocomplete="off">
+            <em>zł</em>
+          </div>
+        </label>
+        <button class="btn" type="submit">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14 M5 12h14"/></svg>
+          Dodaj do listy
+        </button>
+      </form>
+
+      <ul class="cost-list" id="shopList"></ul>
+      <p class="empty" id="shopEmpty">Lista jest pusta. Dodaj produkty powyżej.</p>
+      <button type="button" class="link clear-done" id="shopClearDone" hidden>Usuń kupione z listy</button>
+    </section>
+
+    <!-- Promocje -->
+    <section class="card reveal" aria-labelledby="promoTitle">
+      <div class="card-head">
+        <span class="icon icon-yellow" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z M7.5 8.5h.01"/></svg>
+        </span>
+        <div>
+          <h2 id="promoTitle">Promocje w sklepach</h2>
+          <p class="sub">Wybierz sklep i sprawdź aktualne oferty na produkty z listy</p>
+        </div>
+      </div>
+      <div class="chips store-chips" id="storeChips" role="group" aria-label="Sklep"></div>
+      <div class="promo-list" id="promoList"></div>
+      <p class="disclaimer">Linki otwierają aktualne wyniki wyszukiwania promocji i gazetek w nowej karcie.</p>
+    </section>
+  </div>
   </main>
 
   <footer class="footer">
