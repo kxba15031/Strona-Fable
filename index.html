@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#16a34a">
+  <meta name="description" content="Grosik – prosty menedżer finansów: wypłata, stałe koszty i agent, który podpowie, co zrobić z resztą pieniędzy.">
+  <title>Grosik – Twoje finanse pod kontrolą</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%2316a34a'/%3E%3Ccircle cx='32' cy='32' r='20' fill='%23facc15'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="bg" aria-hidden="true">
+    <span class="blob blob-1"></span>
+    <span class="blob blob-2"></span>
+    <span class="blob blob-3"></span>
+  </div>
+
+  <header class="topbar">
+    <a class="brand" href="#top">
+      <span class="brand-mark" aria-hidden="true"><span></span></span>
+      <span class="brand-name">Grosik</span>
+    </a>
+    <span class="month" id="monthLabel"></span>
+  </header>
+
+  <main class="layout" id="top">
+    <!-- Podsumowanie -->
+    <section class="hero reveal" aria-labelledby="heroTitle">
+      <div class="hero-shine" aria-hidden="true"></div>
+      <p class="hero-label" id="heroTitle">Zostaje Ci w tym miesiącu</p>
+      <p class="hero-amount" id="leftAmount">0,00 zł</p>
+      <div class="meter" role="img" aria-label="Udział stałych kosztów w wypłacie">
+        <div class="meter-fill" id="meterFill"></div>
+      </div>
+      <p class="meter-note" id="meterNote">Dodaj wypłatę, aby zacząć</p>
+      <div class="hero-stats">
+        <div class="stat">
+          <span class="stat-label">Wypłata</span>
+          <span class="stat-value" id="statIncome">0 zł</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Stałe koszty</span>
+          <span class="stat-value" id="statCosts">0 zł</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Do wypłaty</span>
+          <span class="stat-value" id="statDays">–</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Agent -->
+    <section class="card agent reveal" aria-labelledby="agentTitle">
+      <div class="card-head">
+        <div class="agent-avatar" aria-hidden="true">
+          <span class="eye"></span><span class="eye"></span>
+        </div>
+        <div>
+          <h2 id="agentTitle">Agent Grosik</h2>
+          <p class="sub"><span class="dot"></span> analizuje Twój budżet na bieżąco</p>
+        </div>
+      </div>
+      <div class="chat" id="chat" aria-live="polite"></div>
+      <div class="chips" id="chips">
+        <button type="button" class="chip" data-q="left">Ile mi zostało?</button>
+        <button type="button" class="chip" data-q="plan">Na co przeznaczyć?</button>
+        <button type="button" class="chip" data-q="invest">W co zainwestować?</button>
+        <button type="button" class="chip" data-q="cut">Jak ograniczyć koszty?</button>
+      </div>
+      <p class="disclaimer">Podpowiedzi mają charakter edukacyjny i nie są rekomendacją inwestycyjną.</p>
+    </section>
+
+    <!-- Wypłata -->
+    <section class="card reveal" aria-labelledby="incomeTitle">
+      <div class="card-head">
+        <span class="icon icon-yellow" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M3 7h18v12H3z M3 11h18 M7 15h4"/></svg>
+        </span>
+        <div>
+          <h2 id="incomeTitle">Twoja wypłata</h2>
+          <p class="sub">Kwota „na rękę”, którą dostajesz co miesiąc</p>
+        </div>
+      </div>
+      <div class="fields">
+        <label class="field field-wide">
+          <span>Wypłata netto</span>
+          <div class="input-wrap">
+            <input id="income" type="text" inputmode="decimal" placeholder="np. 6500" autocomplete="off">
+            <em>zł</em>
+          </div>
+        </label>
+        <label class="field">
+          <span>Dzień wypłaty</span>
+          <div class="input-wrap">
+            <input id="payday" type="number" inputmode="numeric" min="1" max="31" placeholder="10">
+          </div>
+        </label>
+        <label class="field">
+          <span>Twoje oszczędności</span>
+          <div class="input-wrap">
+            <input id="savings" type="text" inputmode="decimal" placeholder="np. 5000" autocomplete="off">
+            <em>zł</em>
+          </div>
+        </label>
+      </div>
+    </section>
+
+    <!-- Stałe koszty -->
+    <section class="card reveal" aria-labelledby="costsTitle">
+      <div class="card-head">
+        <span class="icon icon-green" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z M9 8h6 M9 12h6"/></svg>
+        </span>
+        <div>
+          <h2 id="costsTitle">Stałe koszty</h2>
+          <p class="sub">Czynsz, rachunki, raty, subskrypcje…</p>
+        </div>
+      </div>
+
+      <form class="add-form" id="costForm" novalidate>
+        <label class="field field-wide">
+          <span>Nazwa</span>
+          <div class="input-wrap">
+            <input id="costName" type="text" placeholder="np. Czynsz" maxlength="40" autocomplete="off">
+          </div>
+        </label>
+        <label class="field">
+          <span>Kwota</span>
+          <div class="input-wrap">
+            <input id="costAmount" type="text" inputmode="decimal" placeholder="0" autocomplete="off">
+            <em>zł</em>
+          </div>
+        </label>
+        <label class="field">
+          <span>Kategoria</span>
+          <div class="input-wrap">
+            <select id="costCategory"></select>
+          </div>
+        </label>
+        <button class="btn" type="submit">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14 M5 12h14"/></svg>
+          Dodaj koszt
+        </button>
+      </form>
+
+      <ul class="cost-list" id="costList"></ul>
+      <p class="empty" id="costEmpty">Nie masz jeszcze żadnych kosztów. Dodaj pierwszy powyżej.</p>
+    </section>
+
+    <!-- Struktura kosztów -->
+    <section class="card reveal" aria-labelledby="chartTitle">
+      <div class="card-head">
+        <span class="icon icon-yellow" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9h-9z M15 3.5A9 9 0 0 1 20.5 9H15z"/></svg>
+        </span>
+        <div>
+          <h2 id="chartTitle">Na co idą pieniądze</h2>
+          <p class="sub">Podział stałych kosztów według kategorii</p>
+        </div>
+      </div>
+      <div class="chart">
+        <div class="donut-wrap">
+          <svg class="donut" id="donut" viewBox="0 0 120 120" role="img" aria-label="Wykres kosztów według kategorii"></svg>
+          <div class="donut-center">
+            <span>Razem</span>
+            <strong id="donutTotal">0 zł</strong>
+          </div>
+        </div>
+        <ul class="legend" id="legend"></ul>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    Dane zapisują się wyłącznie w Twojej przeglądarce.
+    <button type="button" class="link" id="resetBtn">Wyczyść dane</button>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
