@@ -500,7 +500,18 @@
   }
 
   /* ---------- Zakupy ---------- */
-  const STORES = ['Biedronka', 'Lidl', 'Kaufland', 'Auchan', 'Carrefour', 'Żabka', 'Netto', 'Dino'];
+  // Stałe strony sklepów, na których zawsze są bieżące gazetki.
+  const STORE_LINKS = {
+    Biedronka: 'https://www.biedronka.pl/pl/gazetki',
+    Lidl: 'https://www.lidl.pl/c/nasze-gazetki/s10008614',
+    Kaufland: 'https://sklep.kaufland.pl/gazeta-reklamowa.html',
+    Auchan: 'https://www.auchan.pl/pl',
+    Carrefour: 'https://www.carrefour.pl/oferta-sklepow-stacjonarnych',
+    Żabka: 'https://gazetka.zabka.pl/',
+    Netto: 'https://netto.pl/gazetka-netto/',
+    Dino: 'https://marketdino.pl/gazetki/lista/standard',
+  };
+  const STORES = Object.keys(STORE_LINKS);
 
   // Orientacyjne ceny typowych opakowań (zł). Dłuższe frazy sprawdzane są najpierw.
   const PRICES = [
@@ -602,14 +613,12 @@
     $('shopClearDone').hidden = !state.shop.some((i) => i.done);
   }
 
-  const searchUrl = (query) => `https://www.google.com/search?q=${encodeURIComponent(query)}`;
-
-  function promoLink(label, action, query, main) {
+  function storeLink(store, main) {
     const a = el('a', `promo-link${main ? ' main' : ''}`);
-    a.href = searchUrl(query);
+    a.href = STORE_LINKS[store];
     a.target = '_blank';
     a.rel = 'noopener noreferrer';
-    a.append(el('span', '', label), el('small', '', `${action} ↗`));
+    a.append(el('span', '', `Gazetki ${store}`), el('small', '', 'otwórz ↗'));
     return a;
   }
 
@@ -622,17 +631,7 @@
       chip.setAttribute('aria-pressed', String(state.store === store));
       return chip;
     }));
-    const store = state.store;
-    const links = [store
-      ? promoLink(`Aktualna gazetka – ${store}`, 'otwórz', `${store} gazetka promocyjna aktualna`, true)
-      : promoLink('Aktualne gazetki promocyjne', 'otwórz', 'aktualne gazetki promocyjne sklepy spożywcze', true)];
-    const seen = new Set();
-    state.shop.filter((i) => !i.done).forEach((i) => {
-      const key = plain(i.name);
-      if (seen.has(key)) return;
-      seen.add(key);
-      links.push(promoLink(i.name, 'szukaj promocji', `${i.name} promocja ${store || 'gazetka'} aktualna`));
-    });
+    const links = state.store ? [storeLink(state.store, true)] : STORES.map((store) => storeLink(store, false));
     $('promoList').replaceChildren(...links);
     renderLeaflets();
   }
@@ -694,7 +693,7 @@
     const note = (msg) => box.replaceChildren(el('p', 'leaflet-note', msg));
     if (promoState === 'loading') return note('Wczytuję aktualne gazetki…');
     if (promoState === 'slow') return note('Nie udało się jeszcze pobrać gazetek. Spróbuję ponownie, gdy wróci połączenie.');
-    if (promoState === 'unavailable') return note('Gazetki pokazują się po otwarciu strony w Claude na zalogowanym koncie. Poniżej możesz wyszukać promocje samodzielnie.');
+    if (promoState === 'unavailable') return note('Gazetki pokazują się po otwarciu strony w Claude na zalogowanym koncie. Poniżej są strony sklepów z bieżącymi gazetkami.');
 
     const today = isoToday();
     const current = promoData.leaflets
@@ -706,8 +705,8 @@
     }
     if (!current.length) {
       nodes.push(el('p', 'leaflet-note', state.store
-        ? `Nie mam aktualnej gazetki dla sklepu ${state.store}. Skorzystaj z wyszukiwania poniżej.`
-        : 'Nie mam teraz aktualnych gazetek. Skorzystaj z wyszukiwania poniżej.'));
+        ? `Nie mam aktualnej gazetki dla sklepu ${state.store}. Otwórz stronę sklepu poniżej.`
+        : 'Nie mam teraz aktualnych gazetek. Otwórz strony sklepów poniżej.'));
     }
     const stems = listStems();
     current.forEach((l) => {
@@ -730,9 +729,9 @@
         });
         card.appendChild(ul);
       }
-      if (l.url) {
-        const a = el('a', 'leaflet-link', 'Zobacz całą gazetkę ↗');
-        a.href = l.url;
+      if (STORE_LINKS[l.store]) {
+        const a = el('a', 'leaflet-link', `Otwórz gazetki ${l.store} ↗`);
+        a.href = STORE_LINKS[l.store];
         a.target = '_blank';
         a.rel = 'noopener noreferrer';
         card.appendChild(a);
