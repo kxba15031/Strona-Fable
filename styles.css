@@ -431,3 +431,32 @@ button, input, select { font: inherit; color: inherit; }
 .goal-pay { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; margin-top: 4px; }
 .btn.btn-small { grid-column: auto; padding: 12px 20px; }
 input[type="month"] { min-height: 48px; }
+
+/* ---------- Edycja, kopia, pytania do AI ---------- */
+.edit {
+  flex: none; width: 34px; height: 34px; border-radius: 50%;
+  border: 0; cursor: pointer; background: var(--green-50); color: var(--muted);
+  display: grid; place-items: center; padding: 0;
+  transition: background .2s, color .2s;
+}
+.edit svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.edit:hover { background: var(--yellow-100); color: #92400e; }
+.edit:focus-visible { outline: 3px solid var(--green-500); outline-offset: 2px; }
+.cost.editing { border-color: var(--yellow-400); background: var(--yellow-100); }
+.cancel-edit { grid-column: 1 / -1; justify-self: center; }
+.cancel-edit[hidden] { display: none; }
+.shop-to-exp { width: 100%; margin-top: 14px; }
+.shop-to-exp[hidden] { display: none; }
+input[type="date"] { min-height: 48px; }
+
+.ask { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; margin-top: 12px; }
+.ask[hidden] { display: none; }
+.ask .input-wrap { background: #fff; border-color: var(--green-200); }
+.bubble.ai { white-space: pre-wrap; overflow-wrap: anywhere; }
+.bubble.ai:has(.typing) { padding: 0; }
+
+.footer p { margin: 0 0 6px; }
+.footer-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 16px; }
+.footer label.link { cursor: pointer; }
+#backupNote { min-height: 1.2em; color: var(--green-700); font-weight: 600; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

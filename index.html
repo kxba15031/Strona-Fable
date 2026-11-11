@@ -79,6 +79,12 @@
         <button type="button" class="chip" data-q="invest">W co zainwestować?</button>
         <button type="button" class="chip" data-q="cut">Jak ograniczyć koszty?</button>
       </div>
+      <form class="ask" id="askForm" novalidate hidden>
+        <div class="input-wrap">
+          <input id="askInput" type="text" placeholder="Zapytaj własnymi słowami…" maxlength="300" autocomplete="off" aria-label="Pytanie do agenta AI">
+        </div>
+        <button class="btn btn-small" type="submit" id="askBtn">Zapytaj</button>
+      </form>
       <p class="disclaimer">Podpowiedzi mają charakter edukacyjny i nie są rekomendacją inwestycyjną.</p>
     </section>
 
@@ -197,6 +203,7 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14 M5 12h14"/></svg>
           Dodaj koszt
         </button>
+        <button type="button" class="link cancel-edit" id="costCancel" hidden>Anuluj edycję</button>
       </form>
 
       <ul class="cost-list" id="costList"></ul>
@@ -298,10 +305,17 @@
             <select id="expCategory"></select>
           </div>
         </label>
+        <label class="field field-wide">
+          <span>Data</span>
+          <div class="input-wrap">
+            <input id="expDate" type="date">
+          </div>
+        </label>
         <button class="btn" type="submit">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14 M5 12h14"/></svg>
           Dodaj wydatek
         </button>
+        <button type="button" class="link cancel-edit" id="expCancel" hidden>Anuluj edycję</button>
       </form>
       <ul class="cost-list" id="expList"></ul>
       <p class="empty" id="expEmpty">Nie masz jeszcze wydatków w tym miesiącu.</p>
@@ -450,7 +464,11 @@
 
       <ul class="cost-list" id="shopList"></ul>
       <p class="empty" id="shopEmpty">Lista jest pusta. Dodaj produkty powyżej.</p>
-      <button type="button" class="link clear-done" id="shopClearDone" hidden>Usuń kupione z listy</button>
+      <button type="button" class="btn shop-to-exp" id="shopToExpenses" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+        Dopisz kupione do wydatków
+      </button>
+      <button type="button" class="link clear-done" id="shopClearDone" hidden>Usuń kupione bez dopisywania</button>
     </section>
 
     <!-- Promocje -->
@@ -474,8 +492,14 @@
   </main>
 
   <footer class="footer">
-    Dane zapisują się wyłącznie w Twojej przeglądarce.
-    <button type="button" class="link" id="resetBtn">Wyczyść dane</button>
+    <p>Dane zapisują się wyłącznie w Twojej przeglądarce. Zrób kopię, żeby ich nie stracić.</p>
+    <p class="footer-actions">
+      <button type="button" class="link" id="exportBtn">Pobierz kopię</button>
+      <label class="link" for="importFile">Wczytaj kopię</label>
+      <input type="file" id="importFile" accept=".json,application/json" class="visually-hidden">
+      <button type="button" class="link" id="resetBtn">Wyczyść dane</button>
+    </p>
+    <p id="backupNote" aria-live="polite"></p>
   </footer>
 
   <script src="app.js"></script>
