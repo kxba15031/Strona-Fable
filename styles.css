@@ -22,7 +22,7 @@
 
 * { box-sizing: border-box; }
 
-html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+html { overflow-anchor: none; scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
 
 body {
   margin: 0;
@@ -53,7 +53,7 @@ button, input, select { font: inherit; color: inherit; }
 
 /* ---------- Pasek górny ---------- */
 .topbar {
-  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10;
+  position: relative; z-index: 10;
   display: flex; align-items: center; justify-content: space-between;
   padding: 14px 18px;
   background: rgba(255, 255, 255, .78);
@@ -251,7 +251,8 @@ button, input, select { font: inherit; color: inherit; }
 @keyframes bob { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-4px) rotate(-3deg); } }
 @keyframes blink { 0%, 92%, 100% { transform: scaleY(1); } 96% { transform: scaleY(.1); } }
 
-.chat { display: grid; gap: 10px; min-height: 80px; align-content: start; }
+.chat { display: grid; gap: 10px; min-height: 80px; align-content: start; transition: opacity .3s; }
+.chat.updating { opacity: .45; }
 .bubble {
   max-width: 94%; justify-self: start;
   background: #fff; border: 1px solid var(--line);

@@ -401,18 +401,35 @@
     node.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'nearest' });
   }
 
-  /** Pokazuje wskaźnik pisania, a potem kolejne dymki. */
-  function say(bubbles, { replace = false, scroll = false } = {}) {
+  /**
+   * Wykonuje zmianę układu tak, żeby to, na co patrzy użytkownik, nie przesunęło się na ekranie.
+   * Agent jest nad formularzami, więc zmiana wysokości czatu przesuwałaby całą stronę.
+   */
+  function keepViewport(change) {
+    const chat = $('chat');
+    let anchor = document.activeElement;
+    if (!anchor || anchor === document.body || !anchor.getClientRects().length) {
+      anchor = document.elementFromPoint(window.innerWidth / 2, window.innerHeight / 2);
+    }
+    const before = anchor ? anchor.getBoundingClientRect().top : 0;
+    change();
+    if (!anchor || !anchor.isConnected || chat.contains(anchor)) return;
+    const delta = anchor.getBoundingClientRect().top - before;
+    if (Math.abs(delta) > 0.5) window.scrollBy({ top: delta, behavior: 'instant' });
+  }
+
+  /** Odpowiedź na pytanie: wskaźnik pisania, a potem kolejne dymki pod rozmową. */
+  function say(bubbles) {
     const chat = $('chat');
     const token = ++chatToken;
+    chat.classList.remove('updating');
     chat.querySelectorAll('.typing').forEach((t) => t.parentElement.remove());
-    if (replace) chat.replaceChildren();
     const dots = el('div', 'typing');
     dots.append(el('span'), el('span'), el('span'));
     const typing = bubble([dots]);
     typing.style.padding = '0';
     chat.appendChild(typing);
-    if (scroll) scrollChat(typing);
+    scrollChat(typing);
     setTimeout(() => {
       if (token !== chatToken) return;
       typing.remove();
@@ -420,15 +437,28 @@
         b.style.animationDelay = `${i * 0.18}s`;
         chat.appendChild(b);
       });
-      if (scroll && bubbles.length) scrollChat(bubbles[bubbles.length - 1]);
+      if (bubbles.length) scrollChat(bubbles[bubbles.length - 1]);
     }, reducedMotion ? 0 : 650);
+  }
+
+  /** Automatyczny raport: podmienia treść czatu w miejscu, bez przewijania strony. */
+  function showReport(bubbles) {
+    const chat = $('chat');
+    const token = ++chatToken;
+    chat.classList.add('updating');
+    setTimeout(() => {
+      if (token !== chatToken) return;
+      bubbles.forEach((b, i) => { b.style.animationDelay = `${i * 0.12}s`; });
+      keepViewport(() => chat.replaceChildren(...bubbles));
+      chat.classList.remove('updating');
+    }, reducedMotion ? 0 : 350);
   }
 
   function report() {
     const d = compute();
     const bubbles = msgLeft(d);
     if (d.income > 0 && d.left > 0) bubbles.push(...msgPlan(d));
-    say(bubbles, { replace: true });
+    showReport(bubbles);
   }
 
   let reportTimer = 0;
@@ -514,7 +544,7 @@
       clearTimeout(reportTimer);
       const chat = $('chat');
       chat.appendChild(bubble([document.createTextNode(chip.textContent)], 'user'));
-      say(ANSWERS[chip.dataset.q](compute()), { scroll: true });
+      say(ANSWERS[chip.dataset.q](compute()));
     });
 
     // Potwierdzenie w dwóch kliknięciach (bez okna confirm, które bywa blokowane).
