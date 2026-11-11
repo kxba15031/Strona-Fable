@@ -19,7 +19,10 @@
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   /* ---------- Stan ---------- */
-  const emptyState = () => ({ income: 0, payday: 10, savings: 0, costs: [], shop: [], store: '' });
+  const emptyState = () => ({
+    income: 0, payday: 10, savings: 0, costs: [], shop: [], store: '',
+    extras: [], expenses: [], goals: [], limits: {}, history: [], paid: [], month: '',
+  });
   let state = emptyState();
 
   function load() {
@@ -36,6 +39,7 @@
             name: String(c.name || 'Koszt').slice(0, 40),
             amount: Number(c.amount),
             category: catById(c.category).id,
+            day: Math.round(Number(c.day)) >= 1 && Math.round(Number(c.day)) <= 31 ? Math.round(Number(c.day)) : 0,
           }));
         state.shop = (Array.isArray(saved.shop) ? saved.shop : [])
           .filter((i) => i && i.name)
@@ -48,6 +52,29 @@
             done: Boolean(i.done),
           }));
         state.store = STORES.includes(saved.store) ? saved.store : '';
+        const arr = (v) => (Array.isArray(v) ? v : []);
+        const dated = (x) => x && x.name && Number(x.amount) > 0 && isIso(x.date);
+        state.extras = arr(saved.extras).filter(dated).map((x) => ({
+          id: String(x.id || uid()), name: String(x.name).slice(0, 40), amount: Number(x.amount), date: x.date,
+        }));
+        state.expenses = arr(saved.expenses).filter(dated).map((x) => ({
+          id: String(x.id || uid()), name: String(x.name).slice(0, 60), amount: Number(x.amount), date: x.date,
+          cat: expCat(x.cat).id, goalId: x.goalId ? String(x.goalId) : '',
+        }));
+        state.goals = arr(saved.goals).filter((g) => g && g.name && Number(g.target) > 0).map((g) => ({
+          id: String(g.id || uid()), name: String(g.name).slice(0, 40), target: Number(g.target),
+          saved: Math.max(0, Number(g.saved) || 0), deadline: /^\d{4}-\d{2}$/.test(g.deadline) ? g.deadline : '',
+        }));
+        state.limits = {};
+        EXP_CATS.forEach((cat) => {
+          const v = saved.limits && Number(saved.limits[cat.id]);
+          if (v > 0) state.limits[cat.id] = v;
+        });
+        state.history = arr(saved.history).filter((x) => x && /^\d{4}-\d{2}$/.test(x.month)).map((x) => ({
+          month: x.month, income: Number(x.income) || 0, fixed: Number(x.fixed) || 0, spent: Number(x.spent) || 0,
+        }));
+        state.paid = arr(saved.paid).map(String);
+        state.month = /^\d{4}-\d{2}$/.test(saved.month) ? saved.month : '';
       }
     } catch (_) { /* brak lub uszkodzone dane – zaczynamy od zera */ }
   }
@@ -145,8 +172,16 @@
 
   /* ---------- Obliczenia ---------- */
   function compute() {
+    const ym = thisMonth();
     const costs = state.costs.reduce((sum, c) => sum + c.amount, 0);
-    const left = state.income - costs;
+    const extra = sum(inMonth(state.extras, ym));
+    const monthExpenses = inMonth(state.expenses, ym);
+    const spent = sum(monthExpenses);
+    const spentByCat = {};
+    monthExpenses.forEach((x) => { spentByCat[x.cat] = (spentByCat[x.cat] || 0) + x.amount; });
+    const income = state.income + extra;
+    const budget = income - costs;
+    const left = budget - spent;
     const byCat = CATEGORIES
       .map((cat) => ({
         ...cat,
@@ -154,10 +189,11 @@
       }))
       .filter((c) => c.total > 0)
       .sort((a, b) => b.total - a.total);
-    const share = state.income > 0 ? costs / state.income : 0;
+    const share = income > 0 ? costs / income : 0;
+    const used = income > 0 ? (costs + spent) / income : 0;
     const days = daysToPayday();
     const cushionMonths = costs > 0 ? state.savings / costs : (state.savings > 0 ? Infinity : 0);
-    return { income: state.income, costs, left, byCat, share, days, cushionMonths, savings: state.savings };
+    return { income, extra, costs, spent, spentByCat, budget, left, byCat, share, used, days, cushionMonths, savings: state.savings };
   }
 
   function buildPlan(d) {
@@ -198,12 +234,13 @@
     countTo($('leftAmount'), d.left, (v) => money.format(v));
     countTo($('statIncome'), d.income, zl);
     countTo($('statCosts'), d.costs, zl);
+    countTo($('statSpent'), d.spent, zl);
     $('statDays').textContent = d.days === 0 ? 'dziś!' : `${d.days} ${plural(d.days, 'dzień', 'dni', 'dni')}`;
     document.querySelector('.hero').classList.toggle('negative', d.left < 0);
-    $('meterFill').style.width = `${Math.min(100, d.share * 100)}%`;
-    $('meterNote').textContent = d.income <= 0
-      ? 'Dodaj wypłatę, aby zacząć'
-      : `Stałe koszty to ${Math.round(d.share * 100)}% Twojej wypłaty`;
+    $('meterFill').style.width = `${Math.min(100, d.used * 100)}%`;
+    if (d.income <= 0) $('meterNote').textContent = 'Dodaj wypłatę, aby zacząć';
+    else if (d.spent > 0) $('meterNote').textContent = `Stałe koszty i wydatki to ${Math.round(d.used * 100)}% Twojego dochodu`;
+    else $('meterNote').textContent = `Stałe koszty to ${Math.round(d.share * 100)}% Twojego dochodu`;
   }
 
   /* ---------- Render: lista kosztów ---------- */
@@ -214,7 +251,18 @@
     const dot = el('span', 'cost-dot');
     dot.style.background = cat.color;
     const info = el('div', 'cost-info');
-    info.append(el('div', 'cost-name', cost.name), el('div', 'cost-cat', cat.name));
+    const meta = el('div', 'cost-cat');
+    const dayLabel = el('label');
+    const day = el('input', 'price-edit day-edit');
+    day.type = 'text';
+    day.inputMode = 'numeric';
+    day.id = `day-${cost.id}`;
+    day.value = cost.day || '';
+    day.placeholder = '–';
+    day.setAttribute('aria-label', `Dzień płatności: ${cost.name}`);
+    dayLabel.append(document.createTextNode(`${cat.name} · dzień `), day);
+    meta.appendChild(dayLabel);
+    info.append(el('div', 'cost-name', cost.name), meta);
     const del = el('button', 'del', '×');
     del.type = 'button';
     del.setAttribute('aria-label', `Usuń koszt: ${cost.name}`);
@@ -309,22 +357,40 @@
     if (d.income <= 0) {
       return [bubble([para('Cześć! Jestem Grosik 👋 Wpisz swoją ', ['wypłatę'], ' i dodaj stałe koszty, a policzę, ile naprawdę zostaje Ci na życie i co warto z tym zrobić.')])];
     }
-    if (d.left < 0) {
-      return [bubble([
-        para('Uwaga: stałe koszty przekraczają wypłatę o ', [zl(-d.left)], '.'),
-        para('Zanim pomyślisz o oszczędzaniu, trzeba zbić koszty albo zwiększyć dochód. Zapytaj mnie „Jak ograniczyć koszty?”.'),
-      ], 'warn')];
-    }
     const out = [];
-    const nodes = [para('Po opłaceniu stałych kosztów zostaje Ci ', [zl(d.left)], ` – to ${Math.round((1 - d.share) * 100)}% wypłaty.`)];
-    if (d.days > 0) {
-      nodes.push(para(`Do wypłaty ${plural(d.days, 'został', 'zostały', 'zostało')} ${d.days} ${plural(d.days, 'dzień', 'dni', 'dni')}. Gdyby cała ta kwota miała wystarczyć do tego czasu, to około `, [zl(d.left / d.days)], ' dziennie.'));
+    if (d.left < 0) {
+      out.push(bubble([
+        para(d.spent > 0 ? 'Uwaga: stałe koszty i wydatki przekraczają dochód o ' : 'Uwaga: stałe koszty przekraczają dochód o ', [zl(-d.left)], '.'),
+        para('Zanim pomyślisz o oszczędzaniu, trzeba zbić koszty albo zwiększyć dochód. Zapytaj mnie „Jak ograniczyć koszty?”.'),
+      ], 'warn'));
     } else {
-      nodes.push(para('Dziś dzień wypłaty – najlepszy moment, żeby od razu rozdzielić pieniądze według planu.'));
+      const nodes = [d.spent > 0
+        ? para('Po stałych kosztach i dotychczasowych wydatkach (', [zl(d.spent)], ') zostaje Ci ', [zl(d.left)], ` – to ${Math.round((d.left / d.income) * 100)}% dochodu.`)
+        : para('Po opłaceniu stałych kosztów zostaje Ci ', [zl(d.left)], ` – to ${Math.round((d.left / d.income) * 100)}% dochodu.`)];
+      if (d.days > 0) {
+        nodes.push(para(`Do wypłaty ${plural(d.days, 'został', 'zostały', 'zostało')} ${d.days} ${plural(d.days, 'dzień', 'dni', 'dni')}. Gdyby cała ta kwota miała wystarczyć do tego czasu, to około `, [zl(d.left / d.days)], ' dziennie.'));
+      } else {
+        nodes.push(para('Dziś dzień wypłaty – najlepszy moment, żeby od razu rozdzielić pieniądze według planu.'));
+      }
+      out.push(bubble(nodes));
+      if (d.share > 0.6) {
+        out.push(bubble([para('Stałe koszty zjadają ', [`${Math.round(d.share * 100)}%`], ' dochodu. Bezpieczny poziom to okolice 50–60%, więc warto poszukać cięć.')], 'warn'));
+      }
     }
-    out.push(bubble(nodes));
-    if (d.share > 0.6) {
-      out.push(bubble([para('Stałe koszty zjadają ', [`${Math.round(d.share * 100)}%`], ' dochodu. Bezpieczny poziom to okolice 50–60%, więc warto poszukać cięć.')], 'warn'));
+    const over = EXP_CATS.filter((c) => state.limits[c.id] && (d.spentByCat[c.id] || 0) > state.limits[c.id]);
+    if (over.length) {
+      out.push(bubble([para('Przekroczone limity: '), list(over.map((c) => [[c.name], ` – o ${zl(d.spentByCat[c.id] - state.limits[c.id])} ponad limit ${zl(state.limits[c.id])}`]))], 'warn'));
+    }
+    const due = dueList();
+    const overdue = due.filter((x) => x.status === 'overdue');
+    const soon = due.filter((x) => x.status === 'soon');
+    if (overdue.length || soon.length) {
+      const items = [...overdue, ...soon].slice(0, 5).map((x) => [[x.cost.name], ` – ${zl(x.cost.amount)}, ${x.status === 'overdue' ? 'po terminie' : x.diff === 0 ? 'termin dziś' : `za ${x.diff} ${plural(x.diff, 'dzień', 'dni', 'dni')}`}`]);
+      out.push(bubble([para(overdue.length ? 'Masz zaległe płatności. Do zapłaty:' : 'Najbliższe płatności:'), list(items)], overdue.length ? 'warn' : ''));
+    }
+    const perMonth = state.goals.reduce((s, g) => s + goalNeed(g).perMonth, 0);
+    if (perMonth > 0 && d.left >= 0) {
+      out.push(bubble([para('Żeby zdążyć z celami, odkładaj łącznie ', [zl(perMonth)], ' miesięcznie.', perMonth > d.left ? ' To więcej, niż Ci teraz zostaje – rozważ dłuższy termin.' : '')], perMonth > d.left ? 'warn' : ''));
     }
     return out;
   }
@@ -484,6 +550,7 @@
     const d = compute();
     renderSummary(d);
     renderShopSummary(d);
+    renderExtras(d);
     if (costsChanged) renderCosts();
     renderChart(d);
     save();
@@ -642,8 +709,10 @@
     save();
   }
 
+  const VIEWS = ['budget', 'spend', 'goals', 'shop'];
+
   function setView(view) {
-    ['budget', 'shop'].forEach((v) => {
+    VIEWS.forEach((v) => {
       const on = v === view;
       $(`view-${v}`).hidden = !on;
       const tab = $(`tab-${v}`);
@@ -767,7 +836,7 @@
     });
     let savedTab = 'budget';
     try { savedTab = localStorage.getItem(STORAGE_KEY + '-tab') || 'budget'; } catch (_) { /* tryb prywatny */ }
-    if (savedTab === 'shop') setView('shop');
+    if (VIEWS.includes(savedTab) && savedTab !== 'budget') setView(savedTab);
 
     // Cena podpowiada się sama, dopóki użytkownik nie wpisze własnej.
     let priceAuto = true;
@@ -862,8 +931,364 @@
     renderPromos();
   }
 
+  /* ---------- Wydatki, dochody, terminy, limity, cele, historia ---------- */
+  const EXP_CATS = [
+    { id: 'food', name: 'Jedzenie', color: '#22c55e' },
+    { id: 'transport', name: 'Transport', color: '#86efac' },
+    { id: 'fun', name: 'Rozrywka', color: '#facc15' },
+    { id: 'health', name: 'Zdrowie', color: '#a3e635' },
+    { id: 'clothes', name: 'Ubrania', color: '#eab308' },
+    { id: 'home', name: 'Dom', color: '#15803d' },
+    { id: 'other', name: 'Inne', color: '#fde68a' },
+  ];
+  const GOAL_CAT = { id: 'goal', name: 'Cele oszczędnościowe', color: '#0f766e' };
+  const expCat = (id) => (id === 'goal' ? GOAL_CAT : EXP_CATS.find((c) => c.id === id) || EXP_CATS[EXP_CATS.length - 1]);
+
+  const thisMonth = () => isoToday().slice(0, 7);
+  const inMonth = (list, ym) => list.filter((x) => x.date.slice(0, 7) === ym);
+  const sum = (list) => list.reduce((s, x) => s + x.amount, 0);
+  const monthLabel = (ym) => new Date(Number(ym.slice(0, 4)), Number(ym.slice(5, 7)) - 1, 1)
+    .toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' });
+  const amountText = (n) => (n ? String(Math.round(n * 100) / 100).replace('.', ',') : '');
+
+  /** Po zmianie miesiąca zapisuje poprzedni do historii i zeruje oznaczenia „zapłacone”. */
+  function rollMonth() {
+    const cur = thisMonth();
+    if (state.month && state.month !== cur) {
+      const prev = state.month;
+      const fixed = sum(state.costs);
+      const income = state.income + sum(inMonth(state.extras, prev));
+      const spent = sum(inMonth(state.expenses, prev));
+      if (income > 0 || fixed > 0 || spent > 0) {
+        state.history = state.history.filter((h) => h.month !== prev);
+        state.history.push({ month: prev, income, fixed, spent });
+        state.history.sort((a, b) => a.month.localeCompare(b.month));
+        state.history = state.history.slice(-12);
+      }
+      state.paid = [];
+    }
+    state.month = cur;
+  }
+
+  /** Terminy płatności stałych kosztów w bieżącym miesiącu. */
+  function dueList() {
+    const now = new Date();
+    const today = now.getDate();
+    const last = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    return state.costs.filter((c) => c.day).map((c) => {
+      const day = Math.min(c.day, last);
+      const paid = state.paid.includes(c.id);
+      const diff = day - today;
+      const status = paid ? 'paid' : diff < 0 ? 'overdue' : diff <= 7 ? 'soon' : 'later';
+      return { cost: c, day, diff, status };
+    }).sort((a, b) => a.day - b.day);
+  }
+
+  function goalNeed(goal) {
+    const missing = Math.max(0, goal.target - goal.saved);
+    if (!missing) return { missing: 0, months: 0, perMonth: 0 };
+    if (!goal.deadline) return { missing, months: 0, perMonth: 0 };
+    const cur = thisMonth();
+    const months = Math.max(1, (Number(goal.deadline.slice(0, 4)) - Number(cur.slice(0, 4))) * 12
+      + Number(goal.deadline.slice(5, 7)) - Number(cur.slice(5, 7)) + 1);
+    return { missing, months, perMonth: missing / months };
+  }
+
+  function simpleRow(title, subtitle, amount, color, delLabel) {
+    const li = el('li', 'cost');
+    const dot = el('span', 'cost-dot');
+    dot.style.background = color;
+    const info = el('div', 'cost-info');
+    info.append(el('div', 'cost-name', title), el('div', 'cost-cat', subtitle));
+    const del = el('button', 'del', '×');
+    del.type = 'button';
+    del.setAttribute('aria-label', delLabel);
+    li.append(dot, info, el('span', 'cost-amount', money.format(amount)), del);
+    return li;
+  }
+
+  function renderExtraIncome(d) {
+    const items = inMonth(state.extras, thisMonth());
+    $('extraList').replaceChildren(...items.map((x) => {
+      const li = simpleRow(x.name, `Dodatkowy dochód · ${shortDate(x.date)}`, x.amount, '#facc15', `Usuń dochód: ${x.name}`);
+      li.dataset.id = x.id;
+      return li;
+    }));
+    $('extraNote').textContent = d.extra > 0 ? `Razem z wypłatą masz w tym miesiącu ${zl(d.income)}.` : '';
+  }
+
+  function renderDue() {
+    const all = dueList();
+    const box = $('dueList');
+    const shown = all.filter((x) => x.status !== 'later');
+    const later = all.length - shown.length;
+    let note = '';
+    if (!state.costs.length) note = 'Dodaj stałe koszty z dniem płatności, a przypomnę o terminach.';
+    else if (!all.length) note = 'Ustaw dzień płatności przy stałych kosztach, a przypomnę o terminach.';
+    else if (!shown.length) note = 'W najbliższych 7 dniach nie masz żadnych płatności.';
+    if (later) note += `${note ? ' ' : ''}Później w tym miesiącu: ${later} ${plural(later, 'płatność', 'płatności', 'płatności')}.`;
+    $('dueNote').textContent = note;
+    box.replaceChildren(...shown.map((x) => {
+      const li = el('li', `cost shop-item due-${x.status}${x.status === 'paid' ? ' done' : ''}`);
+      li.dataset.id = x.cost.id;
+      const check = el('button', 'check');
+      check.type = 'button';
+      check.innerHTML = CHECK_SVG;
+      check.setAttribute('aria-pressed', String(x.status === 'paid'));
+      check.setAttribute('aria-label', `Zapłacone: ${x.cost.name}`);
+      const info = el('div', 'cost-info');
+      let when;
+      if (x.status === 'paid') when = 'zapłacone';
+      else if (x.status === 'overdue') when = `po terminie o ${-x.diff} ${plural(-x.diff, 'dzień', 'dni', 'dni')}`;
+      else if (x.diff === 0) when = 'termin dziś';
+      else when = `za ${x.diff} ${plural(x.diff, 'dzień', 'dni', 'dni')}`;
+      const meta = el('div', 'cost-cat', `do ${x.day}.${thisMonth().slice(5, 7)} · ${when}`);
+      info.append(el('div', 'cost-name', x.cost.name), meta);
+      li.append(check, info, el('span', 'cost-amount', money.format(x.cost.amount)));
+      return li;
+    }));
+  }
+
+  function renderExpenses(d) {
+    countTo($('expSpent'), d.spent, (v) => money.format(v));
+    countTo($('expBudget'), d.budget, zl);
+    countTo($('expLeft'), d.left, zl);
+    const now = new Date();
+    $('expDaily').textContent = d.spent > 0 ? zl(d.spent / now.getDate()) : '–';
+    $('expMeter').style.width = `${d.budget > 0 ? Math.min(100, (d.spent / d.budget) * 100) : 0}%`;
+    $('view-spend').querySelector('.hero').classList.toggle('negative', d.income > 0 && d.left < 0);
+    if (d.income <= 0) $('expNote').textContent = 'Dodaj wypłatę w zakładce Budżet, a pokażę, ile możesz wydać';
+    else if (d.budget <= 0) $('expNote').textContent = 'Stałe koszty zajmują cały dochód';
+    else $('expNote').textContent = `Wydane ${Math.round((d.spent / d.budget) * 100)}% kwoty, która zostaje po stałych kosztach`;
+
+    const items = inMonth(state.expenses, thisMonth()).sort((a, b) => b.date.localeCompare(a.date));
+    $('expList').replaceChildren(...items.map((x) => {
+      const cat = expCat(x.cat);
+      const li = simpleRow(x.name, `${cat.name} · ${shortDate(x.date)}`, x.amount, cat.color, `Usuń wydatek: ${x.name}`);
+      li.dataset.id = x.id;
+      return li;
+    }));
+    $('expEmpty').hidden = items.length > 0;
+  }
+
+  function renderLimits(d) {
+    $('limitList').replaceChildren(...EXP_CATS.map((cat) => {
+      const spent = d.spentByCat[cat.id] || 0;
+      const limit = state.limits[cat.id] || 0;
+      const over = limit > 0 && spent > limit;
+      const row = el('li', `limit${over ? ' over' : ''}`);
+      const top = el('div', 'limit-top');
+      const name = el('span', 'limit-name', cat.name);
+      const nums = el('label', 'limit-nums');
+      const input = el('input', 'price-edit');
+      input.type = 'text';
+      input.inputMode = 'decimal';
+      input.id = `limit-${cat.id}`;
+      input.dataset.cat = cat.id;
+      input.value = amountText(limit);
+      input.placeholder = 'limit';
+      input.setAttribute('aria-label', `Limit miesięczny: ${cat.name}`);
+      nums.append(document.createTextNode(`${zl(spent)} z `), input, document.createTextNode(' zł'));
+      top.append(name, nums);
+      const bar = el('div', 'plan-bar');
+      const fill = el('i');
+      fill.style.background = over ? '#dc2626' : cat.color;
+      fill.style.width = `${limit > 0 ? Math.min(100, (spent / limit) * 100) : 0}%`;
+      bar.appendChild(fill);
+      row.append(top, bar);
+      if (over) row.append(el('p', 'limit-warn', `Limit przekroczony o ${zl(spent - limit)}`));
+      else if (limit > 0) row.append(el('p', 'limit-info', `Zostało ${zl(limit - spent)}`));
+      return row;
+    }));
+  }
+
+  function renderGoals() {
+    $('goalEmpty').hidden = state.goals.length > 0;
+    $('goalList').replaceChildren(...state.goals.map((g) => {
+      const need = goalNeed(g);
+      const done = need.missing === 0;
+      const card = el('li', `goal${done ? ' reached' : ''}`);
+      card.dataset.id = g.id;
+      const top = el('div', 'goal-top');
+      const del = el('button', 'del', '×');
+      del.type = 'button';
+      del.setAttribute('aria-label', `Usuń cel: ${g.name}`);
+      top.append(el('h3', 'goal-name', g.name), el('span', 'goal-pct', `${Math.min(100, Math.round((g.saved / g.target) * 100))}%`), del);
+      const bar = el('div', 'plan-bar goal-bar');
+      const fill = el('i');
+      fill.style.background = 'linear-gradient(90deg, #22c55e, #facc15)';
+      fill.style.width = `${Math.min(100, (g.saved / g.target) * 100)}%`;
+      bar.appendChild(fill);
+      card.append(top, bar, el('p', 'goal-nums', `${zl(g.saved)} z ${zl(g.target)}`));
+      let info;
+      if (done) info = 'Cel osiągnięty. Gratulacje!';
+      else if (g.deadline) info = `Do końca: ${monthLabel(g.deadline)}. Odkładaj ${zl(need.perMonth)} miesięcznie (${need.months} ${plural(need.months, 'miesiąc', 'miesiące', 'miesięcy')}).`;
+      else info = `Brakuje ${zl(need.missing)}. Dodaj termin, a policzę miesięczną kwotę.`;
+      card.append(el('p', 'goal-info', info));
+      if (!done) {
+        const form = el('form', 'goal-pay');
+        form.noValidate = true;
+        const wrap = el('div', 'input-wrap');
+        const input = el('input');
+        input.type = 'text';
+        input.inputMode = 'decimal';
+        input.id = `pay-${g.id}`;
+        input.placeholder = need.perMonth ? amountText(Math.ceil(need.perMonth)) : 'kwota';
+        input.setAttribute('aria-label', `Kwota wpłaty na cel: ${g.name}`);
+        wrap.append(input, el('em', '', 'zł'));
+        const btn = el('button', 'btn btn-small', 'Wpłać');
+        btn.type = 'submit';
+        form.append(wrap, btn);
+        card.append(form);
+      }
+      return card;
+    }));
+  }
+
+  function renderHistory(d) {
+    const rows = [...state.history.slice(-5), { month: thisMonth(), income: d.income, fixed: d.costs, spent: d.spent, live: true }]
+      .filter((h) => h.income > 0 || h.fixed > 0 || h.spent > 0);
+    $('historyEmpty').hidden = rows.length > 1;
+    $('historyEmpty').textContent = rows.length
+      ? 'To Twój pierwszy miesiąc. Kolejne zapiszą się tu same z początkiem następnego.'
+      : 'Dodaj wypłatę i koszty, a zacznę zapisywać historię miesięcy.';
+    $('historyList').replaceChildren(...rows.map((h) => {
+      const left = h.income - h.fixed - h.spent;
+      const base = Math.max(h.income, h.fixed + h.spent, 1);
+      const row = el('li', 'hist');
+      const top = el('div', 'limit-top');
+      const name = el('span', 'limit-name', monthLabel(h.month));
+      if (h.live) name.append(el('span', 'tag', 'trwa'));
+      top.append(name, el('b', left < 0 ? 'neg' : '', `${left < 0 ? 'brakło' : 'zostało'} ${zl(Math.abs(left))}`));
+      const bar = el('div', 'hist-bar');
+      [[h.fixed, '#15803d'], [h.spent, '#facc15'], [Math.max(0, left), '#bbf7d0']].forEach(([value, color]) => {
+        const seg = el('i');
+        seg.style.background = color;
+        seg.style.width = `${(value / base) * 100}%`;
+        bar.appendChild(seg);
+      });
+      row.append(top, bar, el('p', 'limit-info', `Dochód ${zl(h.income)} · stałe ${zl(h.fixed)} · wydatki ${zl(h.spent)}`));
+      return row;
+    }));
+  }
+
+  function renderExtras(d) {
+    renderExtraIncome(d);
+    renderDue();
+    renderExpenses(d);
+    renderLimits(d);
+    renderGoals();
+    renderHistory(d);
+  }
+
+  function initExtras() {
+    const expSelect = $('expCategory');
+    EXP_CATS.forEach((cat) => {
+      const opt = el('option', '', cat.name);
+      opt.value = cat.id;
+      expSelect.appendChild(opt);
+    });
+
+    $('extraForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = $('extraName').value.trim();
+      const amount = parseAmount($('extraAmount').value);
+      if (!name) return flagInvalid($('extraName'));
+      if (!amount) return flagInvalid($('extraAmount'));
+      state.extras.unshift({ id: uid(), name, amount, date: isoToday() });
+      $('extraName').value = '';
+      $('extraAmount').value = '';
+      refresh();
+    });
+    $('extraList').addEventListener('click', (e) => {
+      const li = e.target.closest('.del') && e.target.closest('.cost');
+      if (!li) return;
+      state.extras = state.extras.filter((x) => x.id !== li.dataset.id);
+      refresh();
+    });
+
+    $('dueList').addEventListener('click', (e) => {
+      const li = e.target.closest('.check') && e.target.closest('.cost');
+      if (!li) return;
+      const id = li.dataset.id;
+      state.paid = state.paid.includes(id) ? state.paid.filter((p) => p !== id) : [...state.paid, id];
+      refresh();
+    });
+
+    $('costList').addEventListener('change', (e) => {
+      if (!e.target.classList.contains('day-edit')) return;
+      const cost = state.costs.find((c) => c.id === e.target.closest('.cost').dataset.id);
+      if (!cost) return;
+      const n = Math.round(Number(e.target.value));
+      cost.day = n >= 1 && n <= 31 ? n : 0;
+      e.target.value = cost.day || '';
+      refresh();
+    });
+
+    $('expForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = $('expName').value.trim();
+      const amount = parseAmount($('expAmount').value);
+      if (!name) return flagInvalid($('expName'));
+      if (!amount) return flagInvalid($('expAmount'));
+      state.expenses.unshift({ id: uid(), name, amount, cat: expSelect.value, date: isoToday() });
+      $('expName').value = '';
+      $('expAmount').value = '';
+      refresh();
+    });
+    $('expList').addEventListener('click', (e) => {
+      const li = e.target.closest('.del') && e.target.closest('.cost');
+      if (!li) return;
+      const exp = state.expenses.find((x) => x.id === li.dataset.id);
+      if (!exp) return;
+      // Usunięcie wpłaty na cel cofa ją także w samym celu.
+      const goal = exp.goalId && state.goals.find((g) => g.id === exp.goalId);
+      if (goal) goal.saved = Math.max(0, goal.saved - exp.amount);
+      state.expenses = state.expenses.filter((x) => x.id !== exp.id);
+      refresh();
+    });
+
+    $('limitList').addEventListener('change', (e) => {
+      const cat = e.target.dataset.cat;
+      if (!cat) return;
+      const value = parseAmount(e.target.value);
+      if (value) state.limits[cat] = value; else delete state.limits[cat];
+      refresh();
+    });
+
+    $('goalForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = $('goalName').value.trim();
+      const target = parseAmount($('goalTarget').value);
+      if (!name) return flagInvalid($('goalName'));
+      if (!target) return flagInvalid($('goalTarget'));
+      const deadline = /^\d{4}-\d{2}$/.test($('goalDeadline').value) && $('goalDeadline').value >= thisMonth() ? $('goalDeadline').value : '';
+      state.goals.push({ id: uid(), name, target, saved: Math.min(target, parseAmount($('goalSaved').value)), deadline });
+      ['goalName', 'goalTarget', 'goalSaved', 'goalDeadline'].forEach((id) => { $(id).value = ''; });
+      refresh();
+    });
+    $('goalList').addEventListener('click', (e) => {
+      const card = e.target.closest('.del') && e.target.closest('.goal');
+      if (!card) return;
+      state.goals = state.goals.filter((g) => g.id !== card.dataset.id);
+      refresh();
+    });
+    $('goalList').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const card = e.target.closest('.goal');
+      const goal = state.goals.find((g) => g.id === card.dataset.id);
+      const input = e.target.querySelector('input');
+      const amount = Math.min(parseAmount(input.value), goal ? goal.target - goal.saved : 0);
+      if (!goal || !amount) return flagInvalid(input);
+      goal.saved += amount;
+      state.expenses.unshift({ id: uid(), name: `Cel: ${goal.name}`.slice(0, 60), amount, cat: 'goal', goalId: goal.id, date: isoToday() });
+      refresh();
+    });
+  }
+
   function init() {
     load();
+    rollMonth();
 
     $('monthLabel').textContent = new Date().toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' });
 
@@ -893,9 +1318,11 @@
       const amount = parseAmount(amountInput.value);
       if (!name) return flagInvalid(nameInput);
       if (!amount) return flagInvalid(amountInput);
-      state.costs.unshift({ id: uid(), name, amount, category: select.value });
+      const dayValue = Math.round(Number($('costDay').value));
+      state.costs.unshift({ id: uid(), name, amount, category: select.value, day: dayValue >= 1 && dayValue <= 31 ? dayValue : 0 });
       nameInput.value = '';
       amountInput.value = '';
+      $('costDay').value = '';
       refresh({ costsChanged: true });
     });
 
@@ -906,12 +1333,8 @@
       if (li.classList.contains('removing')) return;
       li.classList.add('removing');
       state.costs = state.costs.filter((c) => c.id !== li.dataset.id);
-      const d = compute();
-      renderSummary(d);
-      renderShopSummary(d);
-      renderChart(d);
-      save();
-      scheduleReport();
+      state.paid = state.paid.filter((p) => p !== li.dataset.id);
+      refresh();
       setTimeout(() => { li.remove(); $('costEmpty').hidden = state.costs.length > 0; }, reducedMotion ? 0 : 350);
     });
 
@@ -937,6 +1360,7 @@
       resetArmed = 0;
       btn.textContent = 'Wyczyść dane';
       state = emptyState();
+      rollMonth();
       $('income').value = '';
       $('savings').value = '';
       $('payday').value = 10;
@@ -946,6 +1370,7 @@
     });
 
     initShop();
+    initExtras();
     initPromos();
     refresh({ costsChanged: true });
   }

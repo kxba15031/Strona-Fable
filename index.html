@@ -24,6 +24,8 @@
     <span class="month" id="monthLabel"></span>
     <nav class="tabs" role="tablist" aria-label="Sekcje">
       <button type="button" class="tab active" role="tab" id="tab-budget" data-view="budget" aria-selected="true" aria-controls="view-budget">Budżet</button>
+      <button type="button" class="tab" role="tab" id="tab-spend" data-view="spend" aria-selected="false" aria-controls="view-spend">Wydatki</button>
+      <button type="button" class="tab" role="tab" id="tab-goals" data-view="goals" aria-selected="false" aria-controls="view-goals">Cele</button>
       <button type="button" class="tab" role="tab" id="tab-shop" data-view="shop" aria-selected="false" aria-controls="view-shop">Zakupy</button>
     </nav>
   </header>
@@ -35,18 +37,22 @@
       <div class="hero-shine" aria-hidden="true"></div>
       <p class="hero-label" id="heroTitle">Zostaje Ci w tym miesiącu</p>
       <p class="hero-amount" id="leftAmount">0,00 zł</p>
-      <div class="meter" role="img" aria-label="Udział stałych kosztów w wypłacie">
+      <div class="meter" role="img" aria-label="Udział kosztów i wydatków w dochodzie">
         <div class="meter-fill" id="meterFill"></div>
       </div>
       <p class="meter-note" id="meterNote">Dodaj wypłatę, aby zacząć</p>
-      <div class="hero-stats">
+      <div class="hero-stats four">
         <div class="stat">
-          <span class="stat-label">Wypłata</span>
+          <span class="stat-label">Dochód</span>
           <span class="stat-value" id="statIncome">0 zł</span>
         </div>
         <div class="stat">
           <span class="stat-label">Stałe koszty</span>
           <span class="stat-value" id="statCosts">0 zł</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Wydatki</span>
+          <span class="stat-value" id="statSpent">0 zł</span>
         </div>
         <div class="stat">
           <span class="stat-label">Do wypłaty</span>
@@ -74,6 +80,21 @@
         <button type="button" class="chip" data-q="cut">Jak ograniczyć koszty?</button>
       </div>
       <p class="disclaimer">Podpowiedzi mają charakter edukacyjny i nie są rekomendacją inwestycyjną.</p>
+    </section>
+
+    <!-- Terminy płatności -->
+    <section class="card reveal" aria-labelledby="dueTitle">
+      <div class="card-head">
+        <span class="icon icon-green" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M5 5h14v15H5z M5 10h14 M9 3v4 M15 3v4"/></svg>
+        </span>
+        <div>
+          <h2 id="dueTitle">Do zapłaty w tym tygodniu</h2>
+          <p class="sub">Zaległe i najbliższe płatności stałych kosztów</p>
+        </div>
+      </div>
+      <ul class="cost-list flush" id="dueList"></ul>
+      <p class="list-note" id="dueNote"></p>
     </section>
 
     <!-- Wypłata -->
@@ -109,6 +130,29 @@
           </div>
         </label>
       </div>
+
+      <h3 class="mini">Dodatkowe dochody w tym miesiącu</h3>
+      <form class="add-form compact" id="extraForm" novalidate>
+        <label class="field">
+          <span>Źródło</span>
+          <div class="input-wrap">
+            <input id="extraName" type="text" placeholder="np. Premia" maxlength="40" autocomplete="off">
+          </div>
+        </label>
+        <label class="field">
+          <span>Kwota</span>
+          <div class="input-wrap">
+            <input id="extraAmount" type="text" inputmode="decimal" placeholder="0" autocomplete="off">
+            <em>zł</em>
+          </div>
+        </label>
+        <button class="btn" type="submit">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14 M5 12h14"/></svg>
+          Dodaj dochód
+        </button>
+      </form>
+      <ul class="cost-list" id="extraList"></ul>
+      <p class="list-note" id="extraNote"></p>
     </section>
 
     <!-- Stałe koszty -->
@@ -143,6 +187,12 @@
             <select id="costCategory"></select>
           </div>
         </label>
+        <label class="field field-wide">
+          <span>Dzień płatności w miesiącu (opcjonalnie)</span>
+          <div class="input-wrap">
+            <input id="costDay" type="number" inputmode="numeric" min="1" max="31" placeholder="np. 10">
+          </div>
+        </label>
         <button class="btn" type="submit">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14 M5 12h14"/></svg>
           Dodaj koszt
@@ -174,6 +224,160 @@
         </div>
         <ul class="legend" id="legend"></ul>
       </div>
+    </section>
+
+    <!-- Historia miesięcy -->
+    <section class="card reveal" aria-labelledby="historyTitle">
+      <div class="card-head">
+        <span class="icon icon-green" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M4 20V10 M10 20V4 M16 20v-8 M22 20H2"/></svg>
+        </span>
+        <div>
+          <h2 id="historyTitle">Historia miesięcy</h2>
+          <p class="sub">Jak dzieliły się Twoje pieniądze w kolejnych miesiącach</p>
+        </div>
+      </div>
+      <ul class="stack" id="historyList"></ul>
+      <p class="list-note" id="historyEmpty"></p>
+      <p class="hist-legend"><i style="background:#15803d"></i>stałe koszty <i style="background:#facc15"></i>wydatki <i style="background:#bbf7d0"></i>zostało</p>
+    </section>
+  </div>
+
+  <div class="layout" id="view-spend" role="tabpanel" aria-labelledby="tab-spend" hidden>
+    <section class="hero reveal" aria-labelledby="expHeroTitle">
+      <div class="hero-shine" aria-hidden="true"></div>
+      <p class="hero-label" id="expHeroTitle">Wydane w tym miesiącu</p>
+      <p class="hero-amount" id="expSpent">0,00 zł</p>
+      <div class="meter" role="img" aria-label="Ile z miesięcznej kwoty jest już wydane">
+        <div class="meter-fill" id="expMeter"></div>
+      </div>
+      <p class="meter-note" id="expNote"></p>
+      <div class="hero-stats">
+        <div class="stat">
+          <span class="stat-label">Po stałych kosztach</span>
+          <span class="stat-value" id="expBudget">0 zł</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Zostaje</span>
+          <span class="stat-value" id="expLeft">0 zł</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Średnio dziennie</span>
+          <span class="stat-value" id="expDaily">–</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="card reveal" aria-labelledby="expTitle">
+      <div class="card-head">
+        <span class="icon icon-yellow" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M4 7h16v12H4z M4 7l2-3h12l2 3 M15 13h2"/></svg>
+        </span>
+        <div>
+          <h2 id="expTitle">Codzienne wydatki</h2>
+          <p class="sub">Jedzenie, paliwo, rozrywka – wszystko poza stałymi kosztami</p>
+        </div>
+      </div>
+      <form class="add-form" id="expForm" novalidate>
+        <label class="field field-wide">
+          <span>Na co</span>
+          <div class="input-wrap">
+            <input id="expName" type="text" placeholder="np. Obiad na mieście" maxlength="40" autocomplete="off">
+          </div>
+        </label>
+        <label class="field">
+          <span>Kwota</span>
+          <div class="input-wrap">
+            <input id="expAmount" type="text" inputmode="decimal" placeholder="0" autocomplete="off">
+            <em>zł</em>
+          </div>
+        </label>
+        <label class="field">
+          <span>Kategoria</span>
+          <div class="input-wrap">
+            <select id="expCategory"></select>
+          </div>
+        </label>
+        <button class="btn" type="submit">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14 M5 12h14"/></svg>
+          Dodaj wydatek
+        </button>
+      </form>
+      <ul class="cost-list" id="expList"></ul>
+      <p class="empty" id="expEmpty">Nie masz jeszcze wydatków w tym miesiącu.</p>
+    </section>
+
+    <section class="card reveal" aria-labelledby="limitTitle">
+      <div class="card-head">
+        <span class="icon icon-green" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z M9 12l2 2 4-4"/></svg>
+        </span>
+        <div>
+          <h2 id="limitTitle">Limity na kategorie</h2>
+          <p class="sub">Wpisz miesięczny limit, a ostrzegę po jego przekroczeniu</p>
+        </div>
+      </div>
+      <ul class="stack" id="limitList"></ul>
+    </section>
+  </div>
+
+  <div class="layout" id="view-goals" role="tabpanel" aria-labelledby="tab-goals" hidden>
+    <section class="card reveal" aria-labelledby="goalTitle">
+      <div class="card-head">
+        <span class="icon icon-yellow" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M12 12h.01"/></svg>
+        </span>
+        <div>
+          <h2 id="goalTitle">Nowy cel</h2>
+          <p class="sub">Na co odkładasz i do kiedy chcesz zebrać całą kwotę</p>
+        </div>
+      </div>
+      <form class="add-form" id="goalForm" novalidate>
+        <label class="field field-wide">
+          <span>Nazwa celu</span>
+          <div class="input-wrap">
+            <input id="goalName" type="text" placeholder="np. Wakacje" maxlength="40" autocomplete="off">
+          </div>
+        </label>
+        <label class="field">
+          <span>Kwota celu</span>
+          <div class="input-wrap">
+            <input id="goalTarget" type="text" inputmode="decimal" placeholder="np. 5000" autocomplete="off">
+            <em>zł</em>
+          </div>
+        </label>
+        <label class="field">
+          <span>Już odłożone</span>
+          <div class="input-wrap">
+            <input id="goalSaved" type="text" inputmode="decimal" placeholder="0" autocomplete="off">
+            <em>zł</em>
+          </div>
+        </label>
+        <label class="field field-wide">
+          <span>Termin (opcjonalnie)</span>
+          <div class="input-wrap">
+            <input id="goalDeadline" type="month">
+          </div>
+        </label>
+        <button class="btn" type="submit">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14 M5 12h14"/></svg>
+          Dodaj cel
+        </button>
+      </form>
+    </section>
+
+    <section class="card reveal" aria-labelledby="goalsTitle">
+      <div class="card-head">
+        <span class="icon icon-green" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M5 21V4 M5 4h12l-2 4 2 4H5"/></svg>
+        </span>
+        <div>
+          <h2 id="goalsTitle">Twoje cele</h2>
+          <p class="sub">Każda wpłata zapisuje się też w wydatkach miesiąca</p>
+        </div>
+      </div>
+      <ul class="stack" id="goalList"></ul>
+      <p class="empty" id="goalEmpty">Nie masz jeszcze żadnego celu.</p>
     </section>
   </div>
 
