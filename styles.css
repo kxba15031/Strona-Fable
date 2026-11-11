@@ -460,3 +460,11 @@ input[type="date"] { min-height: 48px; }
 .footer label.link { cursor: pointer; }
 #backupNote { min-height: 1.2em; color: var(--green-700); font-weight: 600; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Wiersze z edycją: kwota pod nazwą, żeby długie nazwy mieściły się na telefonie */
+.cost:has(.edit) { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; column-gap: 10px; row-gap: 2px; align-items: center; max-height: 140px; }
+.cost:has(.edit) > .cost-dot, .cost:has(.edit) > .edit, .cost:has(.edit) > .del { grid-row: 1 / span 2; }
+.cost:has(.edit) > .cost-info { grid-column: 2; grid-row: 1; }
+.cost:has(.edit) > .cost-amount { grid-column: 2; grid-row: 2; }
+.cost:has(.edit) .cost-name { white-space: normal; overflow-wrap: anywhere; }
+.cost.removing:has(.edit) { max-height: 0; }
