@@ -193,7 +193,13 @@
     const used = income > 0 ? (costs + spent) / income : 0;
     const days = daysToPayday();
     const cushionMonths = costs > 0 ? state.savings / costs : (state.savings > 0 ? Infinity : 0);
-    return { income, extra, costs, spent, spentByCat, budget, left, byCat, share, used, days, cushionMonths, savings: state.savings };
+    // Prognoza: dotychczasowe dzienne tempo wydatków (bez wpłat na cele) przeniesione na dni do wypłaty.
+    const everyday = spent - (spentByCat.goal || 0);
+    const pace = everyday > 0 ? everyday / new Date().getDate() : 0;
+    const forecast = pace > 0 && days > 0 && income > 0 && left > 0
+      ? { pace, left: left - pace * days, lasts: Math.floor(left / pace) }
+      : null;
+    return { income, extra, costs, spent, spentByCat, budget, left, forecast, byCat, share, used, days, cushionMonths, savings: state.savings };
   }
 
   function buildPlan(d) {
@@ -230,6 +236,13 @@
   }
 
   /* ---------- Render: podsumowanie ---------- */
+  function forecastText(d) {
+    const f = d.forecast;
+    if (f.left >= 0) return `Prognoza: przy obecnym tempie wydatków (${zl(f.pace)} dziennie) do wypłaty zostanie Ci ok. ${zl(f.left)}.`;
+    const short = d.days - f.lasts;
+    return `Prognoza: przy obecnym tempie wydatków (${zl(f.pace)} dziennie) pieniądze skończą się za ${f.lasts} ${plural(f.lasts, 'dzień', 'dni', 'dni')}, czyli ${short} ${plural(short, 'dzień', 'dni', 'dni')} przed wypłatą.`;
+  }
+
   function renderSummary(d) {
     countTo($('leftAmount'), d.left, (v) => money.format(v));
     countTo($('statIncome'), d.income, zl);
@@ -241,6 +254,12 @@
     if (d.income <= 0) $('meterNote').textContent = 'Dodaj wypłatę, aby zacząć';
     else if (d.spent > 0) $('meterNote').textContent = `Stałe koszty i wydatki to ${Math.round(d.used * 100)}% Twojego dochodu`;
     else $('meterNote').textContent = `Stałe koszty to ${Math.round(d.share * 100)}% Twojego dochodu`;
+    const f = $('forecast');
+    f.hidden = !d.forecast;
+    if (d.forecast) {
+      f.classList.toggle('bad', d.forecast.left < 0);
+      f.textContent = forecastText(d);
+    }
   }
 
   /* ---------- Render: lista kosztów ---------- */
@@ -295,7 +314,7 @@
       const track = document.createElementNS(SVG_NS, 'circle');
       track.setAttribute('class', 'track');
       track.setAttribute('cx', 60); track.setAttribute('cy', 60); track.setAttribute('r', R);
-      track.setAttribute('stroke', '#dcfce7');
+      track.style.stroke = 'var(--green-100)';
       svg.appendChild(track);
     }
     let offset = 0;
@@ -380,6 +399,7 @@
         nodes.push(para('Dziś dzień wypłaty – najlepszy moment, żeby od razu rozdzielić pieniądze według planu.'));
       }
       out.push(bubble(nodes));
+      if (d.forecast) out.push(bubble([para(forecastText(d))], d.forecast.left < 0 ? 'warn' : ''));
       if (d.share > 0.6) {
         out.push(bubble([para('Stałe koszty zjadają ', [`${Math.round(d.share * 100)}%`], ' dochodu. Bezpieczny poziom to okolice 50–60%, więc warto poszukać cięć.')], 'warn'));
       }
@@ -707,7 +727,6 @@
     }));
     const links = state.store ? [storeLink(state.store, true)] : STORES.map((store) => storeLink(store, false));
     $('promoList').replaceChildren(...links);
-    renderLeaflets();
   }
 
   function refreshShop({ list = true } = {}) {
@@ -729,108 +748,12 @@
     try { localStorage.setItem(STORAGE_KEY + '-tab', view); } catch (_) { /* tryb prywatny */ }
   }
 
-  /* ---------- Aktualne gazetki (dane spoza strony) ---------- */
-  let promoData = null;
-  let promoState = 'loading'; // loading | slow | ready | unavailable
-
   const isoToday = () => {
     const n = new Date();
     return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
   };
   const isIso = (v) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
   const shortDate = (iso) => `${Number(iso.slice(8, 10))}.${iso.slice(5, 7)}`;
-  const text = (v, max) => (typeof v === 'string' ? v.slice(0, max) : '');
-
-  /** Dane przychodzą z zewnątrz, więc bierzemy z nich tylko to, co ma poprawny kształt. */
-  function cleanPromos(raw) {
-    const leaflets = (raw && Array.isArray(raw.leaflets) ? raw.leaflets : []).slice(0, 80)
-      .filter((l) => l && isIso(l.from) && isIso(l.to) && text(l.store, 30) && text(l.title, 80))
-      .map((l) => ({
-        store: text(l.store, 30),
-        title: text(l.title, 80),
-        from: l.from,
-        to: l.to,
-        items: (Array.isArray(l.items) ? l.items : []).map((i) => text(i, 120)).filter(Boolean).slice(0, 8),
-        url: /^https:\/\//.test(text(l.url, 300)) ? text(l.url, 300) : '',
-      }));
-    return { updated: raw && isIso(raw.updated) ? raw.updated : '', leaflets };
-  }
-
-  /** Rdzeń nazwy produktu, żeby „Mleko” pasowało też do „mleka” w opisie promocji. */
-  function listStems() {
-    return state.shop.filter((i) => !i.done).map((i) => {
-      const word = plain(i.name).split(/\s+/).find((w) => w.length >= 3) || '';
-      return word.length > 4 ? word.slice(0, -1) : word;
-    }).filter(Boolean);
-  }
-
-  function renderLeaflets() {
-    const box = $('leaflets');
-    const note = (msg) => box.replaceChildren(el('p', 'leaflet-note', msg));
-    if (promoState === 'loading') return note('Wczytuję aktualne gazetki…');
-    if (promoState === 'slow') return note('Nie udało się jeszcze pobrać gazetek. Spróbuję ponownie, gdy wróci połączenie.');
-    if (promoState === 'unavailable') return note('Gazetki pokazują się po otwarciu strony w Claude na zalogowanym koncie. Poniżej są strony sklepów z bieżącymi gazetkami.');
-
-    const today = isoToday();
-    const current = promoData.leaflets
-      .filter((l) => l.to >= today && (!state.store || l.store === state.store))
-      .sort((a, b) => a.store.localeCompare(b.store, 'pl') || a.from.localeCompare(b.from));
-    const nodes = [];
-    if (promoData.updated) {
-      nodes.push(el('p', 'leaflet-note', `Stan na ${shortDate(promoData.updated)}.${promoData.updated.slice(0, 4)} · potwierdź ceny w sklepie lub aplikacji`));
-    }
-    if (!current.length) {
-      nodes.push(el('p', 'leaflet-note', state.store
-        ? `Nie mam aktualnej gazetki dla sklepu ${state.store}. Otwórz stronę sklepu poniżej.`
-        : 'Nie mam teraz aktualnych gazetek. Otwórz strony sklepów poniżej.'));
-    }
-    const stems = listStems();
-    current.forEach((l) => {
-      const card = el('article', 'leaflet');
-      const top = el('div', 'leaflet-top');
-      const dates = el('span', 'leaflet-dates', `${shortDate(l.from)}–${shortDate(l.to)}`);
-      top.append(el('span', 'leaflet-store', l.store), dates);
-      if (l.from > today) top.append(el('span', 'tag', 'wkrótce'));
-      card.append(top, el('h3', 'leaflet-title', l.title));
-      if (l.items.length) {
-        const ul = el('ul', 'leaflet-items');
-        l.items.forEach((item) => {
-          const li = el('li', '', item);
-          const p = plain(item);
-          if (stems.some((s) => p.includes(s))) {
-            li.className = 'match';
-            li.append(el('span', 'tag', 'na Twojej liście'));
-          }
-          ul.appendChild(li);
-        });
-        card.appendChild(ul);
-      }
-      if (STORE_LINKS[l.store]) {
-        const a = el('a', 'leaflet-link', `Otwórz gazetki ${l.store} ↗`);
-        a.href = STORE_LINKS[l.store];
-        a.target = '_blank';
-        a.rel = 'noopener noreferrer';
-        card.appendChild(a);
-      }
-      nodes.push(card);
-    });
-    box.replaceChildren(...nodes);
-  }
-
-  async function initPromos() {
-    const fail = () => { promoState = 'unavailable'; renderLeaflets(); };
-    if (!window.claude || typeof window.claude.use !== 'function') return fail();
-    let db = null;
-    try { db = await window.claude.use('db'); } catch (_) { /* brak dostępu */ }
-    if (!db) return fail();
-    const timer = setTimeout(() => { if (promoState === 'loading') { promoState = 'slow'; renderLeaflets(); } }, 10000);
-    db.doc('promos/current').onSnapshot((snap) => {
-      if (!snap.metadata || !snap.metadata.fromCache) clearTimeout(timer);
-      promoData = cleanPromos(snap.exists ? snap.data() : null);
-      promoState = 'ready';
-      renderLeaflets();
-    }, () => { clearTimeout(timer); fail(); });
-  }
 
   function initShop() {
     $('shopHints').replaceChildren(...HINTS.map((h) => { const o = el('option'); o.value = h; return o; }));
@@ -1101,6 +1024,66 @@
     $('expEmpty').hidden = items.length > 0;
   }
 
+  /** Najczęściej powtarzane wydatki jako przyciski do dodania jednym dotknięciem. */
+  function quickItems() {
+    const groups = new Map();
+    state.expenses.filter((x) => x.cat !== 'goal').forEach((x) => {
+      const key = `${plain(x.name).trim()}|${x.cat}`;
+      const g = groups.get(key);
+      if (!g) groups.set(key, { name: x.name, cat: x.cat, amount: x.amount, count: 1, last: x.date });
+      else {
+        g.count += 1;
+        if (x.date > g.last) { g.last = x.date; g.amount = x.amount; g.name = x.name; }
+      }
+    });
+    return [...groups.values()].sort((a, b) => b.count - a.count || b.last.localeCompare(a.last)).slice(0, 5);
+  }
+
+  function renderQuick() {
+    const items = quickItems();
+    $('quickWrap').hidden = !items.length;
+    $('quickList').replaceChildren(...items.map((q, i) => {
+      const chip = el('button', 'chip', `${q.name} · ${Number.isInteger(q.amount) ? zl(q.amount) : money.format(q.amount)}`);
+      chip.type = 'button';
+      chip.dataset.index = i;
+      chip.setAttribute('aria-label', `Dodaj wydatek: ${q.name}, ${money.format(q.amount)}`);
+      return chip;
+    }));
+  }
+
+  function renderCalc() {
+    const monthly = parseAmount($('calcMonthly').value);
+    const years = Math.min(60, Math.max(0, Math.round(parseAmount($('calcYears').value))));
+    const active = $('calcRates').querySelector('.active');
+    const rate = active ? Number(active.dataset.rate) / 100 : 0.05;
+    const months = years * 12;
+    const r = rate / 12;
+    const total = r > 0 ? monthly * ((Math.pow(1 + r, months) - 1) / r) : monthly * months;
+    const paid = monthly * months;
+    $('calcLabel').textContent = `Po ${years} ${plural(years, 'roku', 'latach', 'latach')} możesz mieć około`;
+    countTo($('calcTotal'), total, zl);
+    $('calcPaid').textContent = zl(paid);
+    $('calcGain').textContent = zl(total - paid);
+    $('calcBarPaid').style.width = `${total > 0 ? (paid / total) * 100 : 0}%`;
+    $('calcBarGain').style.width = `${total > 0 ? ((total - paid) / total) * 100 : 0}%`;
+  }
+
+  function initTheme() {
+    const key = `${STORAGE_KEY}-theme`;
+    const apply = (dark) => {
+      document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+      $('themeToggle').setAttribute('aria-pressed', String(dark));
+    };
+    let saved = '';
+    try { saved = localStorage.getItem(key) || ''; } catch (_) { /* tryb prywatny */ }
+    apply(saved === 'dark');
+    $('themeToggle').addEventListener('click', () => {
+      const dark = document.documentElement.dataset.theme !== 'dark';
+      apply(dark);
+      try { localStorage.setItem(key, dark ? 'dark' : 'light'); } catch (_) { /* tryb prywatny */ }
+    });
+  }
+
   function renderLimits(d) {
     $('limitList').replaceChildren(...EXP_CATS.map((cat) => {
       const spent = d.spentByCat[cat.id] || 0;
@@ -1206,6 +1189,7 @@
     renderExtraIncome(d);
     renderDue();
     renderExpenses(d);
+    renderQuick();
     renderLimits(d);
     renderGoals();
     renderHistory(d);
@@ -1297,6 +1281,26 @@
       if (exp.id === editingExp) stopExpEdit();
       refresh();
     });
+
+    $('quickList').addEventListener('click', (e) => {
+      const chip = e.target.closest('.chip');
+      const q = chip && quickItems()[Number(chip.dataset.index)];
+      if (!q) return;
+      state.expenses.unshift({ id: uid(), name: q.name, amount: q.amount, cat: q.cat, date: isoToday() });
+      refresh();
+    });
+
+    ['calcMonthly', 'calcYears'].forEach((id) => $(id).addEventListener('input', renderCalc));
+    $('calcRates').addEventListener('click', (e) => {
+      const chip = e.target.closest('.chip');
+      if (!chip) return;
+      $('calcRates').querySelectorAll('.chip').forEach((c) => {
+        c.classList.toggle('active', c === chip);
+        c.setAttribute('aria-pressed', String(c === chip));
+      });
+      renderCalc();
+    });
+    renderCalc();
 
     $('limitList').addEventListener('change', (e) => {
       const cat = e.target.dataset.cat;
@@ -1564,6 +1568,7 @@
   }
 
   function init() {
+    initTheme();
     load();
     rollMonth();
 
@@ -1663,7 +1668,6 @@
     initKeyboardDismiss();
     initBackup();
     initAsk();
-    initPromos();
     refresh({ costsChanged: true });
   }
 

@@ -22,6 +22,10 @@
       <span class="brand-name">Grosik</span>
     </a>
     <span class="month" id="monthLabel"></span>
+    <button type="button" class="theme-toggle" id="themeToggle" aria-label="Przełącz tryb ciemny" aria-pressed="false">
+      <svg class="moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
+      <svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M12 2v2 M12 20v2 M4 12H2 M22 12h-2 M5 5l1.5 1.5 M17.5 17.5L19 19 M19 5l-1.5 1.5 M6.5 17.5L5 19"/></svg>
+    </button>
     <nav class="tabs" role="tablist" aria-label="Sekcje">
       <button type="button" class="tab active" role="tab" id="tab-budget" data-view="budget" aria-selected="true" aria-controls="view-budget">Budżet</button>
       <button type="button" class="tab" role="tab" id="tab-spend" data-view="spend" aria-selected="false" aria-controls="view-spend">Wydatki</button>
@@ -41,6 +45,7 @@
         <div class="meter-fill" id="meterFill"></div>
       </div>
       <p class="meter-note" id="meterNote">Dodaj wypłatę, aby zacząć</p>
+      <p class="forecast" id="forecast" hidden></p>
       <div class="hero-stats four">
         <div class="stat">
           <span class="stat-label">Dochód</span>
@@ -285,6 +290,10 @@
           <p class="sub">Jedzenie, paliwo, rozrywka – wszystko poza stałymi kosztami</p>
         </div>
       </div>
+      <div class="quick-wrap" id="quickWrap" hidden>
+        <h3 class="mini">Szybkie dodawanie</h3>
+        <div class="chips" id="quickList"></div>
+      </div>
       <form class="add-form" id="expForm" novalidate>
         <label class="field field-wide">
           <span>Na co</span>
@@ -393,6 +402,49 @@
       <ul class="stack" id="goalList"></ul>
       <p class="empty" id="goalEmpty">Nie masz jeszcze żadnego celu.</p>
     </section>
+
+    <section class="card reveal" aria-labelledby="calcTitle">
+      <div class="card-head">
+        <span class="icon icon-yellow" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8 M15 7h6v6"/></svg>
+        </span>
+        <div>
+          <h2 id="calcTitle">Kalkulator inwestycji</h2>
+          <p class="sub">Ile urośnie kwota odkładana co miesiąc</p>
+        </div>
+      </div>
+      <div class="fields">
+        <label class="field">
+          <span>Co miesiąc</span>
+          <div class="input-wrap">
+            <input id="calcMonthly" type="text" inputmode="decimal" value="300" autocomplete="off">
+            <em>zł</em>
+          </div>
+        </label>
+        <label class="field">
+          <span>Przez</span>
+          <div class="input-wrap">
+            <input id="calcYears" type="text" inputmode="numeric" value="10" autocomplete="off">
+            <em>lat</em>
+          </div>
+        </label>
+        <div class="field field-wide">
+          <span>Średni roczny zysk</span>
+          <div class="chips rate-chips" id="calcRates" role="group" aria-label="Średni roczny zysk">
+            <button type="button" class="chip" data-rate="3" aria-pressed="false">3% ostrożnie</button>
+            <button type="button" class="chip active" data-rate="5" aria-pressed="true">5% umiarkowanie</button>
+            <button type="button" class="chip" data-rate="7" aria-pressed="false">7% odważnie</button>
+          </div>
+        </div>
+      </div>
+      <div class="calc-result" aria-live="polite">
+        <span class="calc-label" id="calcLabel">Po 10 latach możesz mieć około</span>
+        <span class="calc-total" id="calcTotal">0 zł</span>
+        <div class="calc-bar"><i id="calcBarPaid" style="background:#15803d"></i><i id="calcBarGain" style="background:#facc15"></i></div>
+        <p class="calc-rows"><span><i style="background:#15803d"></i>wpłacisz <b id="calcPaid">0 zł</b></span><span><i style="background:#facc15"></i>zysk <b id="calcGain">0 zł</b></span></p>
+      </div>
+      <p class="disclaimer">To uproszczona symulacja ze stałą stopą zwrotu, bez podatku i inflacji. Rzeczywiste wyniki inwestycji są zmienne i mogą być ujemne.</p>
+    </section>
   </div>
 
   <div class="layout" id="view-shop" role="tabpanel" aria-labelledby="tab-shop" hidden>
@@ -479,14 +531,12 @@
         </span>
         <div>
           <h2 id="promoTitle">Promocje w sklepach</h2>
-          <p class="sub">Aktualne gazetki i oferty na produkty z Twojej listy</p>
+          <p class="sub">Strony sklepów, na których zawsze są bieżące gazetki</p>
         </div>
       </div>
       <div class="chips store-chips" id="storeChips" role="group" aria-label="Sklep"></div>
-      <div class="leaflets" id="leaflets"></div>
-      <h3 class="mini">Gazetki na stronach sklepów</h3>
       <div class="promo-list" id="promoList"></div>
-      <p class="disclaimer">Oferty powyżej pochodzą z serwisów z ulotkami i są odświeżane okresowo. Strony sklepów otwierają się w nowej karcie.</p>
+      <p class="disclaimer">Strony sklepów otwierają się w nowej karcie.</p>
     </section>
   </div>
   </main>
