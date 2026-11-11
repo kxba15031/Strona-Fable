@@ -517,6 +517,14 @@
     ['czekolad', 5.5], ['ciast', 5], ['chips', 7], ['lody', 12], ['ketchup', 7], ['majonez', 9],
     ['musztard', 4], ['dzem', 7], ['miod', 18], ['pizza', 12], ['szampon', 14], ['mydlo', 4],
     ['zel pod prysznic', 12], ['dezodorant', 13], ['pieluch', 45], ['karma', 6], ['worki', 7],
+    ['awokado', 5], ['winogron', 13], ['gruszk', 7], ['truskawk', 15], ['mandaryn', 8], ['arbuz', 5],
+    ['kapust', 4], ['brokul', 7], ['kalafior', 8], ['pieczark', 5], ['cukini', 8], ['burak', 3],
+    ['schab', 12], ['karkowk', 12], ['indyk', 14], ['wolowin', 25], ['kabanos', 7], ['pasztet', 4],
+    ['serek', 4], ['mozzarell', 5], ['feta', 7], ['margaryn', 6], ['drozdz', 1.5], ['bulka tarta', 3.5],
+    ['napoj', 5], ['energetyk', 5], ['baton', 3], ['zelki', 5], ['orzech', 9], ['paluszk', 3],
+    ['przypraw', 3], ['pieprz', 4], ['ocet', 3], ['sos', 6], ['zupa', 4], ['pierogi', 9], ['frytki', 8],
+    ['chusteczk', 5], ['gabk', 4], ['folia', 6], ['plyn do plukania', 12], ['tabletki do zmywarki', 30],
+    ['zel do prania', 30], ['krem', 15], ['maszynk', 12], ['podpask', 8], ['baterie', 12],
   ].sort((a, b) => b[0].length - a[0].length);
   const HINTS = ['Mleko', 'Chleb', 'Masło', 'Jajka', 'Ser żółty', 'Jogurt', 'Kurczak', 'Makaron', 'Ryż',
     'Ziemniaki', 'Pomidory', 'Jabłka', 'Banany', 'Kawa', 'Herbata', 'Woda', 'Olej', 'Cukier',
@@ -626,6 +634,7 @@
       links.push(promoLink(i.name, 'szukaj promocji', `${i.name} promocja ${store || 'gazetka'} aktualna`));
     });
     $('promoList').replaceChildren(...links);
+    renderLeaflets();
   }
 
   function refreshShop({ list = true } = {}) {
@@ -645,6 +654,109 @@
     try { localStorage.setItem(STORAGE_KEY + '-tab', view); } catch (_) { /* tryb prywatny */ }
   }
 
+  /* ---------- Aktualne gazetki (dane spoza strony) ---------- */
+  let promoData = null;
+  let promoState = 'loading'; // loading | slow | ready | unavailable
+
+  const isoToday = () => {
+    const n = new Date();
+    return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
+  };
+  const isIso = (v) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
+  const shortDate = (iso) => `${Number(iso.slice(8, 10))}.${iso.slice(5, 7)}`;
+  const text = (v, max) => (typeof v === 'string' ? v.slice(0, max) : '');
+
+  /** Dane przychodzą z zewnątrz, więc bierzemy z nich tylko to, co ma poprawny kształt. */
+  function cleanPromos(raw) {
+    const leaflets = (raw && Array.isArray(raw.leaflets) ? raw.leaflets : []).slice(0, 80)
+      .filter((l) => l && isIso(l.from) && isIso(l.to) && text(l.store, 30) && text(l.title, 80))
+      .map((l) => ({
+        store: text(l.store, 30),
+        title: text(l.title, 80),
+        from: l.from,
+        to: l.to,
+        items: (Array.isArray(l.items) ? l.items : []).map((i) => text(i, 120)).filter(Boolean).slice(0, 8),
+        url: /^https:\/\//.test(text(l.url, 300)) ? text(l.url, 300) : '',
+      }));
+    return { updated: raw && isIso(raw.updated) ? raw.updated : '', leaflets };
+  }
+
+  /** Rdzeń nazwy produktu, żeby „Mleko” pasowało też do „mleka” w opisie promocji. */
+  function listStems() {
+    return state.shop.filter((i) => !i.done).map((i) => {
+      const word = plain(i.name).split(/\s+/).find((w) => w.length >= 3) || '';
+      return word.length > 4 ? word.slice(0, -1) : word;
+    }).filter(Boolean);
+  }
+
+  function renderLeaflets() {
+    const box = $('leaflets');
+    const note = (msg) => box.replaceChildren(el('p', 'leaflet-note', msg));
+    if (promoState === 'loading') return note('Wczytuję aktualne gazetki…');
+    if (promoState === 'slow') return note('Nie udało się jeszcze pobrać gazetek. Spróbuję ponownie, gdy wróci połączenie.');
+    if (promoState === 'unavailable') return note('Gazetki pokazują się po otwarciu strony w Claude na zalogowanym koncie. Poniżej możesz wyszukać promocje samodzielnie.');
+
+    const today = isoToday();
+    const current = promoData.leaflets
+      .filter((l) => l.to >= today && (!state.store || l.store === state.store))
+      .sort((a, b) => a.store.localeCompare(b.store, 'pl') || a.from.localeCompare(b.from));
+    const nodes = [];
+    if (promoData.updated) {
+      nodes.push(el('p', 'leaflet-note', `Stan na ${shortDate(promoData.updated)}.${promoData.updated.slice(0, 4)} · potwierdź ceny w sklepie lub aplikacji`));
+    }
+    if (!current.length) {
+      nodes.push(el('p', 'leaflet-note', state.store
+        ? `Nie mam aktualnej gazetki dla sklepu ${state.store}. Skorzystaj z wyszukiwania poniżej.`
+        : 'Nie mam teraz aktualnych gazetek. Skorzystaj z wyszukiwania poniżej.'));
+    }
+    const stems = listStems();
+    current.forEach((l) => {
+      const card = el('article', 'leaflet');
+      const top = el('div', 'leaflet-top');
+      const dates = el('span', 'leaflet-dates', `${shortDate(l.from)}–${shortDate(l.to)}`);
+      top.append(el('span', 'leaflet-store', l.store), dates);
+      if (l.from > today) top.append(el('span', 'tag', 'wkrótce'));
+      card.append(top, el('h3', 'leaflet-title', l.title));
+      if (l.items.length) {
+        const ul = el('ul', 'leaflet-items');
+        l.items.forEach((item) => {
+          const li = el('li', '', item);
+          const p = plain(item);
+          if (stems.some((s) => p.includes(s))) {
+            li.className = 'match';
+            li.append(el('span', 'tag', 'na Twojej liście'));
+          }
+          ul.appendChild(li);
+        });
+        card.appendChild(ul);
+      }
+      if (l.url) {
+        const a = el('a', 'leaflet-link', 'Zobacz całą gazetkę ↗');
+        a.href = l.url;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        card.appendChild(a);
+      }
+      nodes.push(card);
+    });
+    box.replaceChildren(...nodes);
+  }
+
+  async function initPromos() {
+    const fail = () => { promoState = 'unavailable'; renderLeaflets(); };
+    if (!window.claude || typeof window.claude.use !== 'function') return fail();
+    let db = null;
+    try { db = await window.claude.use('db'); } catch (_) { /* brak dostępu */ }
+    if (!db) return fail();
+    const timer = setTimeout(() => { if (promoState === 'loading') { promoState = 'slow'; renderLeaflets(); } }, 10000);
+    db.doc('promos/current').onSnapshot((snap) => {
+      if (!snap.metadata || !snap.metadata.fromCache) clearTimeout(timer);
+      promoData = cleanPromos(snap.exists ? snap.data() : null);
+      promoState = 'ready';
+      renderLeaflets();
+    }, () => { clearTimeout(timer); fail(); });
+  }
+
   function initShop() {
     $('shopHints').replaceChildren(...HINTS.map((h) => { const o = el('option'); o.value = h; return o; }));
 
@@ -658,24 +770,37 @@
     try { savedTab = localStorage.getItem(STORAGE_KEY + '-tab') || 'budget'; } catch (_) { /* tryb prywatny */ }
     if (savedTab === 'shop') setView('shop');
 
-    $('shopName').addEventListener('input', (e) => {
-      const est = estimatePrice(e.target.value);
-      $('shopPrice').placeholder = est ? `ok. ${fmtNum(est)}` : 'wpisz cenę';
-    });
+    // Cena podpowiada się sama, dopóki użytkownik nie wpisze własnej.
+    let priceAuto = true;
+    const priceText = (n) => n.toFixed(2).replace('.', ',');
+    const suggestPrice = () => {
+      const name = $('shopName').value.trim();
+      const est = estimatePrice(name);
+      const hint = $('shopHint');
+      if (priceAuto) $('shopPrice').value = est ? priceText(est) : '';
+      hint.classList.toggle('ok', est > 0);
+      hint.classList.toggle('unknown', Boolean(name) && !est);
+      if (!name) hint.textContent = 'Wpisz produkt, a podpowiem szacowaną cenę.';
+      else if (est) hint.textContent = `Szacowana cena: ok. ${priceText(est)} zł za sztukę. Możesz ją zmienić.`;
+      else hint.textContent = 'Nie znam ceny tego produktu – wpisz ją samodzielnie.';
+    };
+    ['input', 'change', 'blur'].forEach((type) => $('shopName').addEventListener(type, suggestPrice));
+    $('shopPrice').addEventListener('input', (e) => { priceAuto = e.target.value.trim() === ''; });
 
     $('shopForm').addEventListener('submit', (e) => {
       e.preventDefault();
       const nameInput = $('shopName');
       const name = nameInput.value.trim();
       if (!name) return flagInvalid(nameInput);
+      suggestPrice();
       const qty = parseAmount($('shopQty').value) || 1;
-      const typed = parseAmount($('shopPrice').value);
-      const price = typed || estimatePrice(name);
-      state.shop.unshift({ id: uid(), name, qty, price, est: !typed && price > 0, done: false });
+      const price = parseAmount($('shopPrice').value);
+      state.shop.unshift({ id: uid(), name, qty, price, est: priceAuto && price > 0, done: false });
       nameInput.value = '';
       $('shopQty').value = '1';
       $('shopPrice').value = '';
-      $('shopPrice').placeholder = 'szacuję…';
+      priceAuto = true;
+      suggestPrice();
       refreshShop();
     });
 
@@ -822,6 +947,7 @@
     });
 
     initShop();
+    initPromos();
     refresh({ costsChanged: true });
   }
 

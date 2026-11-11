@@ -367,3 +367,26 @@ button, input, select { font: inherit; color: inherit; }
 .promo-link:hover { border-color: var(--green-500); transform: translateX(3px); }
 .promo-link:focus-visible { outline: 3px solid var(--green-500); outline-offset: 2px; }
 .promo-link.main { background: var(--yellow-100); border-color: var(--yellow-200); }
+
+.hint { grid-column: 1 / -1; font-size: .84rem; color: var(--muted); min-height: 1.3em; transition: color .3s; }
+.hint.ok { color: var(--green-700); font-weight: 600; }
+.hint.unknown { color: #92400e; }
+
+/* ---------- Gazetki ---------- */
+.leaflets { display: grid; gap: 10px; margin-top: 12px; }
+.leaflet-note { font-size: .82rem; color: var(--muted); }
+.leaflet {
+  display: grid; gap: 8px; padding: 14px; border-radius: 16px;
+  background: #fff; border: 1px solid var(--line);
+  animation: pop .5s var(--ease);
+}
+.leaflet-top { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.leaflet-store { font-size: .74rem; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; color: #fff; background: var(--green-600); padding: 3px 10px; border-radius: 999px; }
+.leaflet-dates { font-size: .82rem; font-weight: 700; color: var(--green-700); font-variant-numeric: tabular-nums; }
+.leaflet-title { margin: 0; font-size: 1rem; letter-spacing: -.01em; }
+.leaflet-items { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: .9rem; }
+.leaflet-items li.match { font-weight: 700; color: var(--green-700); }
+.leaflet-items .tag { margin-left: 6px; white-space: nowrap; }
+.leaflet-link { justify-self: start; font-size: .86rem; font-weight: 700; color: var(--green-700); padding: 4px 0; }
+.leaflet-link:focus-visible { outline: 3px solid var(--green-500); outline-offset: 2px; }
+.mini { margin: 18px 0 0; font-size: .82rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }

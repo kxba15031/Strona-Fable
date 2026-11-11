@@ -233,10 +233,11 @@
         <label class="field">
           <span>Cena za sztukę</span>
           <div class="input-wrap">
-            <input id="shopPrice" type="text" inputmode="decimal" placeholder="szacuję…" autocomplete="off">
+            <input id="shopPrice" type="text" inputmode="decimal" placeholder="0" autocomplete="off">
             <em>zł</em>
           </div>
         </label>
+        <p class="hint" id="shopHint" aria-live="polite">Wpisz produkt, a podpowiem szacowaną cenę.</p>
         <button class="btn" type="submit">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14 M5 12h14"/></svg>
           Dodaj do listy
@@ -256,12 +257,14 @@
         </span>
         <div>
           <h2 id="promoTitle">Promocje w sklepach</h2>
-          <p class="sub">Wybierz sklep i sprawdź aktualne oferty na produkty z listy</p>
+          <p class="sub">Aktualne gazetki i oferty na produkty z Twojej listy</p>
         </div>
       </div>
       <div class="chips store-chips" id="storeChips" role="group" aria-label="Sklep"></div>
+      <div class="leaflets" id="leaflets"></div>
+      <h3 class="mini">Szukaj promocji samodzielnie</h3>
       <div class="promo-list" id="promoList"></div>
-      <p class="disclaimer">Linki otwierają aktualne wyniki wyszukiwania promocji i gazetek w nowej karcie.</p>
+      <p class="disclaimer">Gazetki pochodzą z serwisów z ulotkami i są odświeżane okresowo. Linki otwierają się w nowej karcie.</p>
     </section>
   </div>
   </main>
