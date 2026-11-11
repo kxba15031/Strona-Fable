@@ -330,6 +330,30 @@
       <p class="empty" id="expEmpty">Nie masz jeszcze wydatków w tym miesiącu.</p>
     </section>
 
+    <section class="card reveal" aria-labelledby="spendChartTitle">
+      <div class="card-head">
+        <span class="icon icon-yellow" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M4 20V10 M10 20V4 M16 20v-8 M22 20H2"/></svg>
+        </span>
+        <div>
+          <h2 id="spendChartTitle">Na co wydajesz</h2>
+          <p class="sub">Wydatki tego miesiąca według kategorii i dni</p>
+        </div>
+      </div>
+      <p class="empty" id="spendChartEmpty">Dodaj wydatki, a pokażę, na co i kiedy idą pieniądze.</p>
+      <div id="spendCharts" hidden>
+        <h3 class="mini first">Według kategorii</h3>
+        <ul class="catbars" id="catBars"></ul>
+        <h3 class="mini">Dzień po dniu</h3>
+        <div class="days" id="dayChart" role="group" aria-label="Wydatki w kolejnych dniach miesiąca">
+          <span class="days-max" id="dayMax"></span>
+          <div class="days-cols" id="dayCols"></div>
+          <div class="days-axis" id="dayAxis" aria-hidden="true"></div>
+        </div>
+        <p class="days-info" id="dayInfo" aria-live="polite"></p>
+      </div>
+    </section>
+
     <section class="card reveal" aria-labelledby="limitTitle">
       <div class="card-head">
         <span class="icon icon-green" aria-hidden="true">

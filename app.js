@@ -1084,6 +1084,77 @@
     });
   }
 
+  /* Wykresy wydatków: słupki kategorii (jedna barwa, wartości przy słupkach) i kolumny dzień po dniu. */
+  let pickedDay = 0;
+
+  function renderSpendCharts(d) {
+    const ym = thisMonth();
+    const items = inMonth(state.expenses, ym);
+    $('spendChartEmpty').hidden = items.length > 0;
+    $('spendCharts').hidden = !items.length;
+    if (!items.length) return;
+
+    const cats = [...EXP_CATS, GOAL_CAT]
+      .map((cat) => ({ name: cat.name, total: d.spentByCat[cat.id] || 0 }))
+      .filter((x) => x.total > 0)
+      .sort((a, b) => b.total - a.total);
+    const top = cats[0].total;
+    $('catBars').replaceChildren(...cats.map((x) => {
+      const li = el('li', 'catbar');
+      const head = el('div', 'catbar-top');
+      const value = el('b', '', zl(x.total));
+      value.append(el('small', '', `${Math.round((x.total / d.spent) * 100)}%`));
+      head.append(el('span', '', x.name), value);
+      const track = el('div', 'catbar-track');
+      const fill = el('i');
+      fill.style.width = `${(x.total / top) * 100}%`;
+      track.appendChild(fill);
+      li.append(head, track);
+      return li;
+    }));
+
+    const now = new Date();
+    const today = now.getDate();
+    const last = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const perDay = Array.from({ length: last }, () => ({ total: 0, count: 0 }));
+    items.forEach((x) => {
+      const day = perDay[Number(x.date.slice(8, 10)) - 1];
+      if (day) { day.total += x.amount; day.count += 1; }
+    });
+    const max = Math.max(...perDay.map((x) => x.total));
+    const month = ym.slice(5, 7);
+    $('dayMax').textContent = `${zl(max)} – najwyższy dzień`;
+    const describe = (n) => {
+      const x = perDay[n - 1];
+      return x.count
+        ? `${n}.${month}: ${money.format(x.total)} (${x.count} ${plural(x.count, 'wydatek', 'wydatki', 'wydatków')})`
+        : `${n}.${month}: bez wydatków`;
+    };
+    if (!pickedDay || pickedDay > today) pickedDay = today;
+    $('dayCols').replaceChildren(...perDay.map((x, i) => {
+      const n = i + 1;
+      const col = el('button', `day${n > today ? ' future' : ''}${n === pickedDay ? ' active' : ''}`);
+      col.type = 'button';
+      col.dataset.day = n;
+      col.disabled = n > today;
+      col.setAttribute('aria-label', n > today ? `${n}.${month}` : describe(n));
+      const bar = el('i');
+      bar.style.height = x.total > 0 ? `${Math.max(3, (x.total / max) * 100)}%` : '0';
+      col.appendChild(bar);
+      return col;
+    }));
+    const ticks = new Set([1, 5, 10, 15, 20, 25, last]);
+    $('dayAxis').replaceChildren(...perDay.map((_, i) => el('span', '', ticks.has(i + 1) ? String(i + 1) : '')));
+    $('dayInfo').textContent = describe(pickedDay);
+    $('dayCols').onpointerover = $('dayCols').onclick = $('dayCols').onfocusin = (e) => {
+      const col = e.target.closest('.day');
+      if (!col || col.disabled) return;
+      pickedDay = Number(col.dataset.day);
+      $('dayCols').querySelectorAll('.day').forEach((c) => c.classList.toggle('active', c === col));
+      $('dayInfo').textContent = describe(pickedDay);
+    };
+  }
+
   function renderLimits(d) {
     $('limitList').replaceChildren(...EXP_CATS.map((cat) => {
       const spent = d.spentByCat[cat.id] || 0;
@@ -1190,6 +1261,7 @@
     renderDue();
     renderExpenses(d);
     renderQuick();
+    renderSpendCharts(d);
     renderLimits(d);
     renderGoals();
     renderHistory(d);
