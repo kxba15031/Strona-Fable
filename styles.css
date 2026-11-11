@@ -53,10 +53,9 @@ button, input, select { font: inherit; color: inherit; }
 
 /* ---------- Pasek górny ---------- */
 .topbar {
-  position: sticky; top: 0; z-index: 10;
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10;
   display: flex; align-items: center; justify-content: space-between;
   padding: 14px 18px;
-  padding-top: max(14px, env(safe-area-inset-top));
   background: rgba(255, 255, 255, .78);
   backdrop-filter: saturate(160%) blur(14px);
   -webkit-backdrop-filter: saturate(160%) blur(14px);

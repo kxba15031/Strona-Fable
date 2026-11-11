@@ -517,8 +517,18 @@
       say(ANSWERS[chip.dataset.q](compute()), { scroll: true });
     });
 
-    $('resetBtn').addEventListener('click', () => {
-      if (!confirm('Na pewno usunąć wszystkie dane?')) return;
+    // Potwierdzenie w dwóch kliknięciach (bez okna confirm, które bywa blokowane).
+    let resetArmed = 0;
+    $('resetBtn').addEventListener('click', (e) => {
+      const btn = e.currentTarget;
+      if (!resetArmed) {
+        btn.textContent = 'Kliknij ponownie, aby potwierdzić';
+        resetArmed = setTimeout(() => { resetArmed = 0; btn.textContent = 'Wyczyść dane'; }, 4000);
+        return;
+      }
+      clearTimeout(resetArmed);
+      resetArmed = 0;
+      btn.textContent = 'Wyczyść dane';
       state = { income: 0, payday: 10, savings: 0, costs: [] };
       $('income').value = '';
       $('savings').value = '';
