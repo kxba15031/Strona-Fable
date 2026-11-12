@@ -127,3 +127,4 @@
 .recipe-steps { font-size: .88rem; color: var(--muted); }
 .recipe-note { font-size: .86rem; font-weight: 600; color: var(--accent-text); }
 .btn:disabled { cursor: default; filter: grayscale(.6); opacity: .6; box-shadow: none; transform: none; }
+.recipe-kcal { justify-self: start; font-size: .84rem; color: var(--amber-text); background: var(--yellow-100); padding: 4px 10px; border-radius: 999px; font-variant-numeric: tabular-nums; }

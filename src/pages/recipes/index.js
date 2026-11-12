@@ -13,6 +13,7 @@ const PER_PAGE = 3;
 const FILTERS = [
   { id: 'all', label: 'Wszystkie', test: () => true },
   { id: 'quick', label: 'Do 15 minut', test: (recipe) => recipe.minutes <= 15 },
+  { id: 'light', label: 'Do 400 kcal', test: (recipe) => recipe.kcal <= 400 },
   { id: 'veg', label: 'Wegetariańskie', test: (recipe) => recipe.vegetarian },
   { id: 'world', label: 'Kuchnie świata', test: (recipe) => recipe.cuisine && recipe.cuisine !== 'pl' },
 ];
@@ -45,7 +46,7 @@ export const template = `
     </div>
     <p class="empty" id="recipeEmpty">Nie mam przepisów dla tego wyboru. Zmień filtr powyżej.</p>
     <ul class="stack" id="recipeList"></ul>
-    <p class="disclaimer">Koszt to szacunek zakupu całych opakowań składników, których nie masz jeszcze na liście.</p>
+    <p class="disclaimer">Kalorie to przybliżenie dla jednej porcji; ilości składników dotyczą wszystkich porcji. Koszt to szacunek zakupu całych opakowań składników, których nie masz jeszcze na liście.</p>
   </section>
 `;
 
@@ -105,7 +106,9 @@ function recipeCard(view) {
   const recipe = RECIPES.find((r) => r.id === view.key);
   const item = el('li', 'recipe');
   const facts = [`${recipe.minutes} min`, CUISINES[recipe.cuisine], recipe.vegetarian && 'bez mięsa', view.cost && `do kupienia ok. ${zl(view.cost)}`];
-  item.append(el('h3', 'recipe-name', recipe.name), el('p', 'recipe-meta', facts.filter(Boolean).join(' · ')));
+  const energy = el('p', 'recipe-kcal');
+  energy.append(el('b', '', `ok. ${recipe.kcal} kcal`), ` na porcję · ${recipe.portions} ${plural(recipe.portions, 'porcja', 'porcje', 'porcji')}`);
+  item.append(el('h3', 'recipe-name', recipe.name), el('p', 'recipe-meta', facts.filter(Boolean).join(' · ')), energy);
 
   const list = el('ul', 'recipe-items');
   recipe.items.forEach(([name, amount], i) => {
