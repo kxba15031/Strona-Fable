@@ -1,6 +1,6 @@
 /* Karta jednego przepisu na liście propozycji. */
 import { el } from '../../core/dom.js';
-import { plural, zl } from '../../core/format.js';
+import { plural, shortDate, zl } from '../../core/format.js';
 import { starButton, stepper } from '../../components/buttons.js';
 import { icon } from '../../components/icons.js';
 import { CUISINES } from './data.js';
@@ -10,7 +10,7 @@ import { scaleAmount } from './portions.js';
 const STATUS_LABEL = { list: 'na liście' };
 const products = (n) => `${n} ${plural(n, 'produkt', 'produkty', 'produktów')}`;
 
-/** `view` to dane wiersza z index.js: klucz przepisu, statusy składników, koszt, ulubiony, porcje, komunikat. */
+/** `view` to dane wiersza z index.js: klucz przepisu, statusy składników, koszt, ulubiony, porcje, data zjedzenia, komunikat. */
 export function recipeCard(view) {
   const recipe = findRecipe(view.key);
   const card = el('li', 'recipe');
@@ -50,6 +50,12 @@ export function recipeCard(view) {
   add.innerHTML = `${icon(missing ? 'plus' : 'check')}<span></span>`;
   add.lastChild.textContent = missing ? `Dodaj ${products(missing)} do listy zakupów` : 'Wszystko jest już na liście';
   card.append(add);
+
+  const eaten = el('button', 'link recipe-eaten', view.eaten ? `Zjedzone ${shortDate(view.eaten)} · cofnij` : 'Oznacz jako zjedzone dziś');
+  eaten.type = 'button';
+  eaten.dataset.action = 'eaten';
+  eaten.setAttribute('aria-pressed', String(Boolean(view.eaten)));
+  card.append(eaten);
 
   if (view.note) {
     const note = el('p', 'recipe-note', `${view.note} `);

@@ -1,6 +1,6 @@
 /* Zakładka „Przepisy”: propozycje posiłków ze składnikami do dodania na listę zakupów. */
 import { $, onAction, syncList } from '../../core/dom.js';
-import { plural, uid } from '../../core/format.js';
+import { isoToday, plural, uid } from '../../core/format.js';
 import { estimatePrice } from '../../core/prices.js';
 import { commit, state } from '../../core/store.js';
 import { chipHtml, selectChip } from '../../components/buttons.js';
@@ -73,6 +73,9 @@ function reshuffle() {
       const j = Math.floor(Math.random() * (i + 1));
       [order[i], order[j]] = [order[j], order[i]];
     }
+    // Dania jedzone niedawno schodzą na koniec kolejki (sortowanie zachowuje wylosowaną kolejność reszty).
+    const { eaten } = state.recipes;
+    order.sort((a, b) => (eaten[a.id] || '').localeCompare(eaten[b.id] || ''));
   }
   page = 0;
 }
@@ -117,6 +120,11 @@ export function init() {
   $('moreRecipes').addEventListener('click', () => { page += 1; render(); });
   onAction($('recipeList'), {
     add(id) { addToShoppingList(findRecipe(id)); },
+    eaten(id) {
+      if (state.recipes.eaten[id]) delete state.recipes.eaten[id];
+      else state.recipes.eaten[id] = isoToday();
+      commit();
+    },
     less(id) { changePortions(id, -1); },
     more(id) { changePortions(id, 1); },
     favorite(id) {
@@ -144,6 +152,7 @@ export function render() {
       key: recipe.id, statuses, cost: missingCost(recipe, statuses), note: added.get(recipe.id) || '',
       favorite: state.recipes.favorites.includes(recipe.id),
       portions: portionsOf(recipe),
+      eaten: state.recipes.eaten[recipe.id] || '',
     };
   }), recipeCard);
 }

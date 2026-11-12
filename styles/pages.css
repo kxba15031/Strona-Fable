@@ -131,3 +131,5 @@
 .recipe-kcal { font-size: .84rem; color: var(--amber-text); background: var(--yellow-100); padding: 4px 10px; border-radius: 999px; font-variant-numeric: tabular-nums; }
 .recipe-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .recipe-head .recipe-name { flex: 1; min-width: 0; padding-top: 5px; }
+.recipe-eaten { justify-self: center; font-size: .86rem; }
+.recipe-eaten[aria-pressed="true"] { color: var(--muted); }
