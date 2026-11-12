@@ -140,3 +140,7 @@
 .month-nav .stepper { background: var(--green-100); }
 .month-nav .stepper-value { min-width: 9.5em; text-transform: capitalize; }
 @media (min-width: 880px) { .month-nav { grid-column: 1 / -1; } }
+
+/* ---------- Budżet: subskrypcje ---------- */
+.subs-total { margin-bottom: 12px; font-size: .92rem; color: var(--muted); }
+.subs-total b { font-size: 1.5rem; font-weight: 800; letter-spacing: -.02em; color: var(--accent-text); font-variant-numeric: tabular-nums; margin-right: 2px; }

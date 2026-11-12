@@ -3,13 +3,18 @@ import { CATEGORIES } from './constants.js';
 import { daysInMonth, daysText, inMonth, plain, sum, thisMonth, zl } from './format.js';
 import { state } from './store.js';
 
-function daysToPayday() {
+/**
+ * Najbliższy termin płatności przypadającej co miesiąc w dniu `day` (dziś też się liczy).
+ * Dzień spoza długości miesiąca (np. 31. w lutym) przesuwa się na ostatni dzień.
+ */
+export function nextPayment({ day }) {
+  if (!day) return null;
   const now = new Date();
-  const today = now.getDate();
-  const payday = Math.min(state.payday, daysInMonth(now));
-  if (payday >= today) return payday - today;
-  const next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-  return daysInMonth(now) - today + Math.min(state.payday, daysInMonth(next));
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const inMonthOf = (first) => new Date(first.getFullYear(), first.getMonth(), Math.min(day, daysInMonth(first)));
+  let date = inMonthOf(today);
+  if (date < today) date = inMonthOf(new Date(now.getFullYear(), now.getMonth() + 1, 1));
+  return { date, inDays: Math.round((date - today) / 86400000) };
 }
 
 /** Wydatki wybranego miesiąca: wpisy, suma i sumy według kategorii. */
@@ -36,7 +41,7 @@ export function compute() {
   const income = state.income + extra;
   const budget = income - costs;
   const left = budget - spent;
-  const days = daysToPayday();
+  const days = nextPayment({ day: state.payday }).inDays;
 
   const byCat = CATEGORIES
     .map((cat) => ({ ...cat, total: sum(state.costs.filter((c) => c.category === cat.id)) }))

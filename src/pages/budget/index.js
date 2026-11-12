@@ -12,6 +12,7 @@ import { answers, report } from './agent.js';
 import { initAsk, resetConversation } from './ai.js';
 import { ask, reply, scheduleReport } from './chat.js';
 import { renderDonut } from './donut.js';
+import { renderSubscriptions, subscriptionsCard } from './subscriptions.js';
 
 const QUESTIONS = [['left', 'Ile mi zostało?'], ['plan', 'Na co przeznaczyć?'], ['invest', 'W co zainwestować?'], ['cut', 'Jak ograniczyć koszty?']];
 
@@ -81,6 +82,8 @@ export const template = `
     <ul class="rows" id="costList"></ul>
     <p class="empty" id="costEmpty">Nie masz jeszcze żadnych kosztów. Dodaj pierwszy powyżej.</p>`,
   })}
+
+  ${subscriptionsCard}
 
   ${card({
     icon: 'pie', tone: 'yellow', id: 'chartTitle', title: 'Na co idą pieniądze', sub: 'Podział stałych kosztów według kategorii',
@@ -285,6 +288,7 @@ export function render(d, info) {
   renderDue();
   renderIncome(d);
   renderCosts();
+  renderSubscriptions(d);
   renderDonut(d);
   renderHistory(d);
 
