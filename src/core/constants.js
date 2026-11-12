@@ -1,5 +1,5 @@
 export const STORAGE_KEY = 'grosik-v1';
-export const VIEWS = ['budget', 'spend', 'goals', 'shop'];
+export const VIEWS = ['budget', 'spend', 'goals', 'shop', 'recipes'];
 
 /** Kategorie stałych kosztów. */
 export const CATEGORIES = [

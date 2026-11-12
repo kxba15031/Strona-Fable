@@ -112,3 +112,18 @@
 .store-link small { flex: none; color: var(--accent-text); font-weight: 700; white-space: nowrap; }
 .store-link:hover { border-color: var(--green-500); transform: translateX(3px); }
 .store-link.main { background: var(--yellow-100); border-color: var(--yellow-200); }
+
+/* ---------- Przepisy ---------- */
+.recipes-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.recipe { display: grid; gap: 10px; padding: 16px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); animation: pop .5s var(--ease); }
+.recipe-name { margin: 0; font-size: 1.05rem; letter-spacing: -.01em; }
+.recipe-meta { font-size: .82rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.recipe-items { list-style: none; margin: 0; padding: 0; display: grid; }
+.recipe-items li { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: .92rem; }
+.recipe-items li:last-child { border-bottom: 0; }
+.recipe-items small { color: var(--muted); white-space: nowrap; }
+.recipe-items .have span { color: var(--muted); }
+.recipe-items .have small { color: var(--accent-text); font-weight: 700; }
+.recipe-steps { font-size: .88rem; color: var(--muted); }
+.recipe-note { font-size: .86rem; font-weight: 600; color: var(--accent-text); }
+.btn:disabled { cursor: default; filter: grayscale(.6); opacity: .6; box-shadow: none; transform: none; }

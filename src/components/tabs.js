@@ -13,14 +13,18 @@ function show(view) {
   });
 }
 
+/** Przechodzi do zakładki i zapamiętuje ją jako ostatnio otwartą. */
+export function openTab(view) {
+  show(view);
+  storage.set(KEY, view);
+  window.scrollTo({ top: 0, behavior: 'instant' });
+}
+
 export function initTabs() {
   const saved = storage.get(KEY);
   show(VIEWS.includes(saved) ? saved : VIEWS[0]);
   document.querySelector('.tabs').addEventListener('click', (e) => {
     const tab = e.target.closest('.tab');
-    if (!tab || tab.classList.contains('active')) return;
-    show(tab.dataset.view);
-    storage.set(KEY, tab.dataset.view);
-    window.scrollTo({ top: 0, behavior: 'instant' });
+    if (tab && !tab.classList.contains('active')) openTab(tab.dataset.view);
   });
 }

@@ -59,18 +59,19 @@ button, input, select { font: inherit; color: inherit; }
 .theme-toggle .sun, :root[data-theme="dark"] .theme-toggle .moon { display: none; }
 :root[data-theme="dark"] .theme-toggle .sun { display: block; }
 
-.tabs { order: 3; flex: 1 0 100%; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 999px; background: var(--green-100); }
+.tabs { order: 3; flex: 1 0 100%; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px; padding: 4px; border-radius: 999px; background: var(--green-100); }
 .tab {
   border: 0; cursor: pointer; background: transparent;
-  padding: 10px 4px; border-radius: 999px;
-  font-weight: 700; font-size: .86rem; color: var(--accent-text);
+  padding: 10px 2px; border-radius: 999px;
+  font-weight: 700; font-size: clamp(.72rem, 3.3vw, .86rem); color: var(--accent-text);
   transition: background .3s var(--ease), color .3s, box-shadow .3s, transform .2s var(--ease);
 }
 .tab:active { transform: scale(.96); }
 .tab.active { background: var(--surface); color: var(--ink); box-shadow: 0 4px 12px -4px rgba(0, 0, 0, .25); }
 
 @media (min-width: 700px) {
-  .tabs { order: 0; flex: 0 0 auto; min-width: 420px; margin-left: 20px; }
+  .tabs { order: 0; flex: 0 0 auto; min-width: 500px; margin-left: 20px; }
+  .tab { font-size: .86rem; }
   .month { order: 1; }
   .theme-toggle { order: 2; }
 }

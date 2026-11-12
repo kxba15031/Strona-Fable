@@ -11,8 +11,9 @@ import * as budget from './pages/budget/index.js';
 import * as spend from './pages/spend/index.js';
 import * as goals from './pages/goals/index.js';
 import * as shop from './pages/shop/index.js';
+import * as recipes from './pages/recipes/index.js';
 
-const pages = { budget, spend, goals, shop };
+const pages = { budget, spend, goals, shop, recipes };
 
 function renderAll(info) {
   const data = compute();

@@ -1,7 +1,7 @@
 # Grosik
 
 Menedżer finansów działający w całości w przeglądarce: budżet z agentem, codzienne wydatki
-z limitami i wykresami, cele oszczędnościowe, kalkulator inwestycji i lista zakupów.
+z limitami i wykresami, cele oszczędnościowe, kalkulator inwestycji, lista zakupów i przepisy.
 Dane zapisują się lokalnie w przeglądarce (`localStorage`).
 
 ## Uruchomienie
@@ -51,6 +51,7 @@ src/
     spend/              Wydatki: index.js, charts.js
     goals/              Cele: index.js, calculator.js
     shop/               Zakupy: index.js
+    recipes/            Przepisy: index.js, data.js (lista przepisów)
   features/             funkcje całej strony
     backup.js           kopia zapasowa i czyszczenie danych
     keyboard.js         chowanie klawiatury na telefonie

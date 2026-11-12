@@ -24,6 +24,9 @@ const PRICES = [
   ['przypraw', 3], ['pieprz', 4], ['ocet', 3], ['sos', 6], ['zupa', 4], ['pierogi', 9], ['frytki', 8],
   ['chusteczk', 5], ['gabk', 4], ['folia', 6], ['plyn do plukania', 12], ['tabletki do zmywarki', 30],
   ['zel do prania', 30], ['krem', 15], ['maszynk', 12], ['podpask', 8], ['baterie', 12],
+  ['tortill', 7], ['hummus', 8], ['oliwk', 7], ['kukurydz', 4], ['bagietk', 3.5], ['rzodkiewk', 3],
+  ['szczypior', 3], ['koncentrat', 4], ['pomidory krojone', 4.5], ['maslo orzechowe', 15], ['pietruszk', 3],
+  ['chleb tostowy', 6], ['serek smietankowy', 6],
 ].sort((a, b) => b[0].length - a[0].length);
 
 /** Podpowiedzi nazw w polu produktu. */
