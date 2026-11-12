@@ -10,6 +10,7 @@ export const findRecipe = (id) => allRecipes().find((recipe) => recipe.id === id
 export const FILTERS = [
   { id: 'all', label: 'Wszystkie', test: () => true },
   { id: 'fav', label: 'Ulubione', test: (recipe) => state.recipes.favorites.includes(recipe.id) },
+  { id: 'own', label: 'Moje', test: (recipe) => Boolean(recipe.custom) },
   { id: 'home', label: 'Z tego, co mam', test: (recipe) => ownedCount(recipe) > 0 },
   { id: 'quick', label: 'Do 15 minut', test: (recipe) => recipe.minutes <= 15 },
   { id: 'light', label: 'Do 400 kcal', test: (recipe) => recipe.kcal > 0 && recipe.kcal <= 400 },

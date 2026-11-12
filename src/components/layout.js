@@ -27,6 +27,17 @@ export const field = ({ id, label, unit = '', wide = false, type = 'text', mode 
 /** Pole z nazwą (zwykła klawiatura, limit długości). */
 export const nameField = (options) => field({ mode: '', wide: true, attrs: 'maxlength="40"', ...options });
 
+/** Wielowierszowe pole tekstowe na całą szerokość formularza. */
+export const textArea = ({ id, label, placeholder = '', rows = 3 }) => `
+  <label class="field field-wide">
+    <span>${label}</span>
+    <div class="input-wrap"><textarea id="${id}" rows="${rows}" placeholder="${placeholder}"></textarea></div>
+  </label>`;
+
+/** Pole wyboru tak/nie. */
+export const checkField = ({ id, label }) => `
+  <label class="check-field"><input id="${id}" type="checkbox"><span>${label}</span></label>`;
+
 /** Pole wyszukiwania z lupą. */
 export const searchField = ({ id, placeholder, label }) => `
   <div class="input-wrap search">

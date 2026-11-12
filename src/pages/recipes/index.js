@@ -9,6 +9,7 @@ import { openTab } from '../../components/tabs.js';
 import { recipeCard } from './card.js';
 import { MEALS } from './data.js';
 import { FILTERS, findRecipe, itemStatuses, missingCost, ownedCount, portionsOf, selectRecipes } from './library.js';
+import { initRecipeForm, recipeFormCard } from './form.js';
 import { initPantry, pantryCard, renderPantry } from './pantry.js';
 import { scaleAmount } from './portions.js';
 
@@ -48,6 +49,8 @@ export const template = `
   </section>
 
   ${pantryCard}
+
+  ${recipeFormCard}
 `;
 
 /** Pora dnia podpowiada posiłek, od którego zaczynamy. */
@@ -99,6 +102,30 @@ function addToShoppingList(recipe) {
   commit();
 }
 
+let ownForm;
+
+/** Usuwa własny przepis razem z tym, co o nim zapamiętano. */
+function removeOwnRecipe(id) {
+  const { recipes } = state;
+  recipes.custom = recipes.custom.filter((recipe) => recipe.id !== id);
+  recipes.favorites = recipes.favorites.filter((fav) => fav !== id);
+  delete recipes.eaten[id];
+  delete recipes.portions[id];
+  ownForm.forget(id);
+  reshuffle();
+  commit();
+}
+
+/** Pokazuje wskazany wybór od początku i przewija do listy. */
+function show(choice) {
+  ({ meal = meal, filter = filter } = choice);
+  query = '';
+  $('recipeSearch').value = '';
+  reshuffle();
+  render();
+  scrollToNode($('recipeListTitle'), 'start');
+}
+
 function changePortions(id, delta) {
   const recipe = findRecipe(id);
   const portions = Math.min(12, Math.max(1, portionsOf(recipe) + delta));
@@ -121,18 +148,14 @@ export function init() {
   onAction($('recipeFilters'), {
     pick(_, button) { filter = button.dataset.value; reshuffle(); render(); },
   });
-  initPantry({
-    onShowRecipes() {
-      filter = 'home';
-      reshuffle();
-      render();
-      scrollToNode($('recipeListTitle'), 'start');
-    },
-  });
+  initPantry({ onShowRecipes: () => show({ filter: 'home' }) });
+  ownForm = initRecipeForm({ onSaved: (recipe) => show({ meal: recipe.meal, filter: 'own' }) });
   reshuffle();
   $('moreRecipes').addEventListener('click', () => { page += 1; render(); });
   onAction($('recipeList'), {
     add(id) { addToShoppingList(findRecipe(id)); },
+    edit(id) { ownForm.edit(id, findRecipe(id)); },
+    delete(id) { removeOwnRecipe(id); },
     eaten(id) {
       if (state.recipes.eaten[id]) delete state.recipes.eaten[id];
       else state.recipes.eaten[id] = isoToday();
@@ -167,6 +190,8 @@ export function render() {
       favorite: state.recipes.favorites.includes(recipe.id),
       portions: portionsOf(recipe),
       eaten: state.recipes.eaten[recipe.id] || '',
+      // Treść własnego przepisu może się zmienić, więc jest częścią danych karty.
+      content: recipe.custom ? JSON.stringify(recipe) : '',
     };
   }), recipeCard);
 }

@@ -79,7 +79,14 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
   font-size: 1rem; font-weight: 600;
   appearance: none; -webkit-appearance: none;
 }
-.input-wrap input::placeholder { color: var(--placeholder); font-weight: 500; }
+.input-wrap textarea {
+  flex: 1; min-width: 0; width: 100%; padding: 12px 0; resize: vertical;
+  border: 0; outline: 0; background: transparent;
+  font: inherit; font-size: 1rem; font-weight: 600; color: inherit; line-height: 1.4;
+}
+.input-wrap :is(input, textarea)::placeholder { color: var(--placeholder); font-weight: 500; }
+.check-field { display: flex; align-items: center; gap: 10px; font-size: .92rem; font-weight: 600; cursor: pointer; }
+.check-field input { width: 20px; height: 20px; accent-color: var(--green-600); }
 .input-wrap em { font-style: normal; font-weight: 700; color: var(--accent-text); margin-left: 8px; }
 .input-wrap.search svg { flex: none; width: 18px; height: 18px; color: var(--muted); margin-right: 10px; }
 .input-wrap.search input::-webkit-search-cancel-button { -webkit-appearance: none; }

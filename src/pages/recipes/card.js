@@ -1,7 +1,7 @@
 /* Karta jednego przepisu na liście propozycji. */
 import { el } from '../../core/dom.js';
 import { plural, shortDate, zl } from '../../core/format.js';
-import { starButton, stepper } from '../../components/buttons.js';
+import { deleteButton, editButton, starButton, stepper } from '../../components/buttons.js';
 import { icon } from '../../components/icons.js';
 import { CUISINES } from './data.js';
 import { findRecipe } from './library.js';
@@ -17,12 +17,14 @@ export function recipeCard(view) {
 
   const owned = view.statuses.filter((status) => status === 'home').length;
   const facts = [
-    `${recipe.minutes} min`, CUISINES[recipe.cuisine], recipe.vegetarian && 'bez mięsa',
+    recipe.minutes && `${recipe.minutes} min`, recipe.custom ? 'własny przepis' : CUISINES[recipe.cuisine], recipe.vegetarian && 'bez mięsa',
     owned && `masz ${owned} z ${recipe.items.length} składników`,
     view.cost && `do kupienia ok. ${zl(view.cost)}`,
   ];
   const head = el('div', 'recipe-head');
-  head.append(el('h3', 'recipe-name', recipe.name), starButton(`Ulubiony: ${recipe.name}`, view.favorite));
+  head.append(el('h3', 'recipe-name', recipe.name));
+  if (recipe.custom) head.append(editButton(`Edytuj przepis: ${recipe.name}`), deleteButton(`Usuń przepis: ${recipe.name}`));
+  head.append(starButton(`Ulubiony: ${recipe.name}`, view.favorite));
   card.append(head, el('p', 'recipe-meta', facts.filter(Boolean).join(' · ')));
 
   const serving = el('div', 'recipe-serving');
@@ -45,7 +47,8 @@ export function recipeCard(view) {
     line.append(el('span', '', name), el('small', '', STATUS_LABEL[status] || scaleAmount(amount, factor)));
     list.appendChild(line);
   });
-  card.append(list, el('p', 'recipe-steps', recipe.steps));
+  card.append(list);
+  if (recipe.steps) card.append(el('p', 'recipe-steps', recipe.steps));
 
   const missing = view.statuses.filter((status) => !status).length;
   const add = el('button', 'btn');
