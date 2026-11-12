@@ -144,3 +144,15 @@
 /* ---------- Budżet: subskrypcje ---------- */
 .subs-total { margin-bottom: 12px; font-size: .92rem; color: var(--muted); }
 .subs-total b { font-size: 1.5rem; font-weight: 800; letter-spacing: -.02em; color: var(--accent-text); font-variant-numeric: tabular-nums; margin-right: 2px; }
+
+/* ---------- Zakupy: tryb „w sklepie” ---------- */
+.store-mode-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 14px; }
+.store-mode-bar:has(#storeModeToggle[hidden]) { display: none; }
+.store-mode-bar .note { margin: 0; flex: 1 1 12em; }
+.store-mode > .hero, .store-mode .store-hide, .store-mode #shopForm { display: none; }
+.store-mode .rows { margin-top: 0; }
+.row.big { padding: 14px; column-gap: 14px; cursor: pointer; }
+.row.big .check { width: 44px; height: 44px; border-radius: 14px; }
+.row.big .check svg { width: 24px; height: 24px; }
+.row.big .row-title { font-size: 1.12rem; }
+.row.big .row-meta { font-size: .86rem; }

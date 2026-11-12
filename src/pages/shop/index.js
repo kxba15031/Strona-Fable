@@ -11,6 +11,7 @@ import { entryForm } from '../../components/entryForm.js';
 import { icon } from '../../components/icons.js';
 import { card, field, hero, nameField } from '../../components/layout.js';
 import { entryRow, inlineInput } from '../../components/row.js';
+import { keepAwake } from '../../features/wakeLock.js';
 
 export const template = `
   ${hero({
@@ -22,6 +23,10 @@ export const template = `
   ${card({
     icon: 'cart', id: 'shopTitle', title: 'Lista zakupów', sub: 'Cenę podpowiem sam – możesz ją zawsze poprawić',
     body: `
+    <div class="store-mode-bar">
+      <button type="button" class="chip" id="storeModeToggle" aria-pressed="false"></button>
+      <p class="note" id="storeModeNote"></p>
+    </div>
     <form class="fields" id="shopForm" novalidate>
       ${nameField({ id: 'shopName', label: 'Produkt', placeholder: 'np. Mleko', attrs: 'maxlength="40" list="shopHints"' })}
       <datalist id="shopHints">${HINTS.map((hint) => `<option value="${hint}"></option>`).join('')}</datalist>
@@ -40,6 +45,7 @@ export const template = `
 
   ${card({
     icon: 'tag', tone: 'yellow', id: 'promoTitle', title: 'Promocje w sklepach', sub: 'Strony sklepów, na których zawsze są bieżące gazetki',
+    className: 'store-hide',
     body: `
     <div class="chips" id="storeChips" role="group" aria-label="Sklep">
       ${['', ...STORES].map((store) => chipHtml({ label: store || 'Wszystkie sklepy', value: store })).join('')}
@@ -48,6 +54,10 @@ export const template = `
     <p class="disclaimer">Strony sklepów otwierają się w nowej karcie.</p>`,
   })}
 `;
+
+// Tryb „w sklepie”: sama lista z dużymi polami do odhaczania i ekranem, który nie gaśnie.
+let inStore = false;
+let screenStaysOn = false;
 
 // Cena podpowiada się sama, dopóki użytkownik nie wpisze własnej.
 let priceIsSuggested = true;
@@ -91,9 +101,21 @@ export function init() {
     done: commit,
   });
 
+  $('storeModeToggle').addEventListener('click', async () => {
+    inStore = !inStore;
+    screenStaysOn = await keepAwake(inStore);
+    commit();
+  });
+
   const find = (id) => state.shop.find((i) => i.id === id);
+  const toggle = (id) => { find(id).done = !find(id).done; commit(); };
+  // W trybie „w sklepie” produkt odhacza dotknięcie dowolnego miejsca wiersza.
+  $('shopList').addEventListener('click', (e) => {
+    const row = e.target.closest('.row');
+    if (inStore && row && !e.target.closest('button')) toggle(row.dataset.key);
+  });
   onAction($('shopList'), {
-    toggle(id) { find(id).done = !find(id).done; commit(); },
+    toggle,
     delete(id) { state.shop = state.shop.filter((i) => i.id !== id); commit(); },
   });
   $('shopList').addEventListener('change', (e) => {
@@ -136,14 +158,18 @@ function renderSummary(d, totals) {
 }
 
 function productRow(row) {
+  const lead = checkButton(`Kupione: ${row.name}`, row.done);
+  if (row.store) {
+    const meta = [`${amountText(row.qty)} szt.`, ...(row.note ? [` · potrzeba: ${row.note}`] : [])];
+    return entryRow({ lead, title: row.name, meta, amount: zlExact(row.qty * row.price), className: `big${row.done ? ' done' : ''}` });
+  }
   const price = inlineInput({ id: `price-${row.key}`, value: row.price ? priceText(row.price) : '', placeholder: '0', label: `Cena za sztukę: ${row.name}` });
   const meta = [`${amountText(row.qty)} × `, price, ' zł'];
   if (!row.price) meta.push(el('span', 'tag', 'bez ceny'));
   else if (row.est) meta.push(el('span', 'tag', 'szac.'));
   if (row.note) meta.push(el('span', 'row-note', `potrzeba: ${row.note}`));
   return entryRow({
-    lead: checkButton(`Kupione: ${row.name}`, row.done),
-    title: row.name, meta, amount: zlExact(row.qty * row.price),
+    lead, title: row.name, meta, amount: zlExact(row.qty * row.price),
     actions: [deleteButton(`Usuń z listy: ${row.name}`)],
     className: row.done ? 'done' : '',
   });
@@ -165,7 +191,7 @@ function renderList(totals) {
     const left = items.filter((i) => !i.done).length;
     return [
       { key: `group-${department.id}`, group: department.name, left, count: items.length },
-      ...items.map((i) => ({ key: i.id, name: i.name, qty: i.qty, price: i.price, est: i.est, done: i.done, note: i.note || '' })),
+      ...items.map((i) => ({ key: i.id, name: i.name, qty: i.qty, price: i.price, est: i.est, done: i.done, note: i.note || '', store: inStore })),
     ];
   });
   syncList($('shopList'), rows, (row) => {
@@ -174,6 +200,13 @@ function renderList(totals) {
     header.append(el('span', '', row.group), el('small', '', row.left ? `${row.left} z ${row.count}` : 'kupione'));
     return header;
   });
+  $('view-shop').classList.toggle('store-mode', inStore);
+  $('storeModeToggle').textContent = inStore ? 'Zakończ zakupy' : 'Tryb w sklepie';
+  $('storeModeToggle').setAttribute('aria-pressed', String(inStore));
+  $('storeModeToggle').hidden = !state.shop.length && !inStore;
+  $('storeModeNote').textContent = inStore
+    ? `Kupione ${totals.boughtCount} z ${state.shop.length}. ${screenStaysOn ? 'Ekran nie zgaśnie, dopóki lista jest otwarta.' : 'Ten telefon nie pozwala stronie zablokować wygaszania ekranu.'}`
+    : '';
   $('shopEmpty').hidden = rows.length > 0;
   $('shopActions').hidden = !totals.boughtCount;
   $('shopToExpenses').querySelector('span').textContent = `Dopisz kupione do wydatków (${zl(totals.done)})`;
