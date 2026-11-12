@@ -1,0 +1,50 @@
+/* Karta jednego przepisu na liście propozycji. */
+import { el } from '../../core/dom.js';
+import { plural, zl } from '../../core/format.js';
+import { icon } from '../../components/icons.js';
+import { CUISINES } from './data.js';
+import { findRecipe } from './library.js';
+
+const STATUS_LABEL = { list: 'na liście' };
+const products = (n) => `${n} ${plural(n, 'produkt', 'produkty', 'produktów')}`;
+
+/** `view` to dane wiersza z index.js: klucz przepisu, statusy składników, koszt, komunikat. */
+export function recipeCard(view) {
+  const recipe = findRecipe(view.key);
+  const card = el('li', 'recipe');
+
+  const facts = [`${recipe.minutes} min`, CUISINES[recipe.cuisine], recipe.vegetarian && 'bez mięsa', view.cost && `do kupienia ok. ${zl(view.cost)}`];
+  card.append(el('h3', 'recipe-name', recipe.name), el('p', 'recipe-meta', facts.filter(Boolean).join(' · ')));
+
+  const energy = el('p', 'recipe-kcal');
+  energy.append(el('b', '', `ok. ${recipe.kcal} kcal`), ` na porcję · ${recipe.portions} ${plural(recipe.portions, 'porcja', 'porcje', 'porcji')}`);
+  card.append(energy);
+
+  const list = el('ul', 'recipe-items');
+  recipe.items.forEach(([name, amount], i) => {
+    const status = view.statuses[i];
+    const line = el('li', status ? 'have' : '');
+    line.append(el('span', '', name), el('small', '', STATUS_LABEL[status] || amount));
+    list.appendChild(line);
+  });
+  card.append(list, el('p', 'recipe-steps', recipe.steps));
+
+  const missing = view.statuses.filter((status) => !status).length;
+  const add = el('button', 'btn');
+  add.type = 'button';
+  add.dataset.action = 'add';
+  add.disabled = missing === 0;
+  add.innerHTML = `${icon(missing ? 'plus' : 'check')}<span></span>`;
+  add.lastChild.textContent = missing ? `Dodaj ${products(missing)} do listy zakupów` : 'Wszystko jest już na liście';
+  card.append(add);
+
+  if (view.note) {
+    const note = el('p', 'recipe-note', `${view.note} `);
+    const link = el('button', 'link', 'Przejdź do zakupów');
+    link.type = 'button';
+    link.dataset.action = 'shop';
+    note.append(link);
+    card.append(note);
+  }
+  return card;
+}

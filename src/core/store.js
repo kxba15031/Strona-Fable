@@ -7,6 +7,7 @@ const emptyState = () => ({
   income: 0, payday: 10, savings: 0, month: '',
   costs: [], paid: [], extras: [], expenses: [], limits: {}, goals: [], history: [],
   shop: [], store: '',
+  recipes: { favorites: [], eaten: {}, portions: {}, pantry: [], custom: [] },
 });
 
 export const state = emptyState();
@@ -15,6 +16,29 @@ const list = (value) => (Array.isArray(value) ? value : []);
 const amount = (value) => Math.max(0, Number(value) || 0);
 const id = (value) => String(value || uid());
 const dated = (x) => x && x.name && Number(x.amount) > 0 && isIsoDate(x.date);
+
+const text = (value, max) => String(value || '').trim().slice(0, max);
+
+/** Dane zakładki Przepisy: ulubione, zjedzone, porcje, spiżarnia i własne przepisy. */
+function sanitizeRecipes(saved) {
+  const r = emptyState().recipes;
+  if (!saved || typeof saved !== 'object') return r;
+  r.favorites = list(saved.favorites).map(String);
+  r.pantry = list(saved.pantry).map((name) => text(name, 40)).filter(Boolean);
+  Object.entries(saved.eaten || {}).forEach(([key, date]) => { if (isIsoDate(date)) r.eaten[key] = date; });
+  Object.entries(saved.portions || {}).forEach(([key, n]) => {
+    const portions = Math.round(Number(n));
+    if (portions >= 1 && portions <= 12) r.portions[key] = portions;
+  });
+  r.custom = list(saved.custom).filter((c) => c && c.name && list(c.items).length).map((c) => ({
+    id: id(c.id), custom: true, name: text(c.name, 60), steps: text(c.steps, 600),
+    meal: ['b', 'd', 's', 'n'].includes(c.meal) ? c.meal : 'd', cuisine: '',
+    minutes: Math.round(amount(c.minutes)), portions: Math.max(1, Math.round(amount(c.portions)) || 1),
+    kcal: Math.round(amount(c.kcal)), vegetarian: Boolean(c.vegetarian),
+    items: list(c.items).filter((item) => list(item)[0]).map((item) => [text(item[0], 40), text(item[1], 30)]),
+  }));
+  return r;
+}
 
 /** Zamienia dowolne dane (z pamięci przeglądarki lub z pliku kopii) na poprawny stan. */
 function sanitize(saved) {
@@ -52,6 +76,7 @@ function sanitize(saved) {
     price: amount(i.price), est: Boolean(i.est), done: Boolean(i.done),
   }));
   s.store = STORES.includes(saved.store) ? saved.store : '';
+  s.recipes = sanitizeRecipes(saved.recipes);
   return s;
 }
 
