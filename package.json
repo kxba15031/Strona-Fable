@@ -1,0 +1,13 @@
+{
+  "name": "grosik",
+  "private": true,
+  "type": "module",
+  "description": "Menedżer finansów: budżet z agentem, wydatki, cele oszczędnościowe i lista zakupów.",
+  "scripts": {
+    "start": "npx --yes serve .",
+    "build": "node scripts/build.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  }
+}
