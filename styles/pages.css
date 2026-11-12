@@ -133,3 +133,5 @@
 .recipe-head .recipe-name { flex: 1; min-width: 0; padding-top: 5px; }
 .recipe-eaten { justify-self: center; font-size: .86rem; }
 .recipe-eaten[aria-pressed="true"] { color: var(--muted); }
+.pantry-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; margin-bottom: 12px; }
+.pantry-show { display: block; margin: 14px auto 0; }

@@ -10,6 +10,7 @@ export const findRecipe = (id) => allRecipes().find((recipe) => recipe.id === id
 export const FILTERS = [
   { id: 'all', label: 'Wszystkie', test: () => true },
   { id: 'fav', label: 'Ulubione', test: (recipe) => state.recipes.favorites.includes(recipe.id) },
+  { id: 'home', label: 'Z tego, co mam', test: (recipe) => ownedCount(recipe) > 0 },
   { id: 'quick', label: 'Do 15 minut', test: (recipe) => recipe.minutes <= 15 },
   { id: 'light', label: 'Do 400 kcal', test: (recipe) => recipe.kcal > 0 && recipe.kcal <= 400 },
   { id: 'veg', label: 'Wegetariańskie', test: (recipe) => recipe.vegetarian },
@@ -34,11 +35,25 @@ export function selectRecipes({ meal, filter, query }) {
 
 /**
  * Co dzieje się z każdym składnikiem przepisu:
- * 'list' – jest już na liście zakupów, '' – trzeba go kupić.
+ * 'home' – masz go w domu, 'list' – jest już na liście zakupów, '' – trzeba go kupić.
  */
 export function itemStatuses(recipe) {
+  const atHome = new Set(state.recipes.pantry.map(plain));
   const onList = new Set(state.shop.filter((i) => !i.done).map((i) => plain(i.name)));
-  return recipe.items.map(([name]) => (onList.has(plain(name)) ? 'list' : ''));
+  return recipe.items.map(([name]) => {
+    if (atHome.has(plain(name))) return 'home';
+    return onList.has(plain(name)) ? 'list' : '';
+  });
+}
+
+/** Ile składników przepisu jest już w domu. */
+export const ownedCount = (recipe) => itemStatuses(recipe).filter((status) => status === 'home').length;
+
+/** Nazwy wszystkich składników, od najczęściej używanych w przepisach. */
+export function ingredientNames() {
+  const uses = new Map();
+  allRecipes().forEach((recipe) => recipe.items.forEach(([name]) => uses.set(name, (uses.get(name) || 0) + 1)));
+  return [...uses.keys()].sort((a, b) => uses.get(b) - uses.get(a) || a.localeCompare(b, 'pl'));
 }
 
 /** Liczba porcji wybrana przez użytkownika albo domyślna z przepisu. */

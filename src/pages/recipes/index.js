@@ -1,5 +1,5 @@
 /* Zakładka „Przepisy”: propozycje posiłków ze składnikami do dodania na listę zakupów. */
-import { $, onAction, syncList } from '../../core/dom.js';
+import { $, onAction, scrollToNode, syncList } from '../../core/dom.js';
 import { isoToday, plural, uid } from '../../core/format.js';
 import { estimatePrice } from '../../core/prices.js';
 import { commit, state } from '../../core/store.js';
@@ -8,7 +8,8 @@ import { searchField } from '../../components/layout.js';
 import { openTab } from '../../components/tabs.js';
 import { recipeCard } from './card.js';
 import { MEALS } from './data.js';
-import { FILTERS, findRecipe, itemStatuses, missingCost, portionsOf, selectRecipes } from './library.js';
+import { FILTERS, findRecipe, itemStatuses, missingCost, ownedCount, portionsOf, selectRecipes } from './library.js';
+import { initPantry, pantryCard, renderPantry } from './pantry.js';
 import { scaleAmount } from './portions.js';
 
 const PER_PAGE = 3;
@@ -45,6 +46,8 @@ export const template = `
     <ul class="stack" id="recipeList"></ul>
     <p class="disclaimer">Kalorie to przybliżenie dla jednej porcji; ilości składników dotyczą wybranej liczby porcji. Koszt to szacunek zakupu całych opakowań składników, których nie masz jeszcze na liście.</p>
   </section>
+
+  ${pantryCard}
 `;
 
 /** Pora dnia podpowiada posiłek, od którego zaczynamy. */
@@ -76,6 +79,8 @@ function reshuffle() {
     // Dania jedzone niedawno schodzą na koniec kolejki (sortowanie zachowuje wylosowaną kolejność reszty).
     const { eaten } = state.recipes;
     order.sort((a, b) => (eaten[a.id] || '').localeCompare(eaten[b.id] || ''));
+    // „Z tego, co mam”: najpierw dania, do których brakuje najmniej składników.
+    if (filter === 'home') order.sort((a, b) => (a.items.length - ownedCount(a)) - (b.items.length - ownedCount(b)));
   }
   page = 0;
 }
@@ -116,6 +121,14 @@ export function init() {
   onAction($('recipeFilters'), {
     pick(_, button) { filter = button.dataset.value; reshuffle(); render(); },
   });
+  initPantry({
+    onShowRecipes() {
+      filter = 'home';
+      reshuffle();
+      render();
+      scrollToNode($('recipeListTitle'), 'start');
+    },
+  });
   reshuffle();
   $('moreRecipes').addEventListener('click', () => { page += 1; render(); });
   onAction($('recipeList'), {
@@ -142,6 +155,7 @@ export function render() {
 
   selectChip($('mealChips'), searching() ? '' : meal);
   selectChip($('recipeFilters'), filter);
+  renderPantry();
   $('recipeListTitle').textContent = searching() ? `Wyniki dla „${query.trim()}”` : MEALS.find((m) => m.id === meal).title;
   $('recipeCount').textContent = `${order.length} ${plural(order.length, 'przepis', 'przepisy', 'przepisów')}`;
   $('recipeEmpty').hidden = order.length > 0;

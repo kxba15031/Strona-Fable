@@ -7,7 +7,7 @@ import { CUISINES } from './data.js';
 import { findRecipe } from './library.js';
 import { scaleAmount } from './portions.js';
 
-const STATUS_LABEL = { list: 'na liście' };
+const STATUS_LABEL = { home: 'mam', list: 'na liście' };
 const products = (n) => `${n} ${plural(n, 'produkt', 'produkty', 'produktów')}`;
 
 /** `view` to dane wiersza z index.js: klucz przepisu, statusy składników, koszt, ulubiony, porcje, data zjedzenia, komunikat. */
@@ -15,7 +15,12 @@ export function recipeCard(view) {
   const recipe = findRecipe(view.key);
   const card = el('li', 'recipe');
 
-  const facts = [`${recipe.minutes} min`, CUISINES[recipe.cuisine], recipe.vegetarian && 'bez mięsa', view.cost && `do kupienia ok. ${zl(view.cost)}`];
+  const owned = view.statuses.filter((status) => status === 'home').length;
+  const facts = [
+    `${recipe.minutes} min`, CUISINES[recipe.cuisine], recipe.vegetarian && 'bez mięsa',
+    owned && `masz ${owned} z ${recipe.items.length} składników`,
+    view.cost && `do kupienia ok. ${zl(view.cost)}`,
+  ];
   const head = el('div', 'recipe-head');
   head.append(el('h3', 'recipe-name', recipe.name), starButton(`Ulubiony: ${recipe.name}`, view.favorite));
   card.append(head, el('p', 'recipe-meta', facts.filter(Boolean).join(' · ')));
@@ -48,7 +53,7 @@ export function recipeCard(view) {
   add.dataset.action = 'add';
   add.disabled = missing === 0;
   add.innerHTML = `${icon(missing ? 'plus' : 'check')}<span></span>`;
-  add.lastChild.textContent = missing ? `Dodaj ${products(missing)} do listy zakupów` : 'Wszystko jest już na liście';
+  add.lastChild.textContent = missing ? `Dodaj ${products(missing)} do listy zakupów` : 'Niczego nie trzeba dokupować';
   card.append(add);
 
   const eaten = el('button', 'link recipe-eaten', view.eaten ? `Zjedzone ${shortDate(view.eaten)} · cofnij` : 'Oznacz jako zjedzone dziś');
