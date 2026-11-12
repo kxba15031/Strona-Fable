@@ -127,6 +127,7 @@
 .recipe-steps { font-size: .88rem; color: var(--muted); }
 .recipe-note { font-size: .86rem; font-weight: 600; color: var(--accent-text); }
 .btn:disabled { cursor: default; filter: grayscale(.6); opacity: .6; box-shadow: none; transform: none; }
-.recipe-kcal { justify-self: start; font-size: .84rem; color: var(--amber-text); background: var(--yellow-100); padding: 4px 10px; border-radius: 999px; font-variant-numeric: tabular-nums; }
+.recipe-serving { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.recipe-kcal { font-size: .84rem; color: var(--amber-text); background: var(--yellow-100); padding: 4px 10px; border-radius: 999px; font-variant-numeric: tabular-nums; }
 .recipe-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .recipe-head .recipe-name { flex: 1; min-width: 0; padding-top: 5px; }

@@ -29,6 +29,19 @@ export const checkButton = (label, pressed) => toggleButton('toggle', 'check', '
 /** Gwiazdka „ulubione”. */
 export const starButton = (label, pressed) => toggleButton('favorite', 'star', 'star', label, pressed);
 
+/** Licznik z przyciskami − i + (akcje „less” i „more”). */
+export function stepper({ value, text, label, min = 1, max = 12 }) {
+  const wrap = el('div', 'stepper');
+  wrap.setAttribute('role', 'group');
+  wrap.setAttribute('aria-label', label);
+  const less = actionButton('less', 'step', 'Mniej', '−');
+  const more = actionButton('more', 'step', 'Więcej', '+');
+  less.disabled = value <= min;
+  more.disabled = value >= max;
+  wrap.append(less, el('span', 'stepper-value', text), more);
+  return wrap;
+}
+
 /** Przycisk-pastylka budowany dla danych, np. szybkie wydatki. */
 export function chip({ label, value = '', action = 'pick', title = '' }) {
   const button = el('button', 'chip', label);

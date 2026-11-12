@@ -8,7 +8,8 @@ import { searchField } from '../../components/layout.js';
 import { openTab } from '../../components/tabs.js';
 import { recipeCard } from './card.js';
 import { MEALS } from './data.js';
-import { FILTERS, findRecipe, itemStatuses, missingCost, selectRecipes } from './library.js';
+import { FILTERS, findRecipe, itemStatuses, missingCost, portionsOf, selectRecipes } from './library.js';
+import { scaleAmount } from './portions.js';
 
 const PER_PAGE = 3;
 
@@ -42,7 +43,7 @@ export const template = `
     </div>
     <p class="empty" id="recipeEmpty">Nie mam przepisów dla tego wyboru. Zmień posiłek lub filtr powyżej.</p>
     <ul class="stack" id="recipeList"></ul>
-    <p class="disclaimer">Kalorie to przybliżenie dla jednej porcji; ilości składników dotyczą wszystkich porcji. Koszt to szacunek zakupu całych opakowań składników, których nie masz jeszcze na liście.</p>
+    <p class="disclaimer">Kalorie to przybliżenie dla jednej porcji; ilości składników dotyczą wybranej liczby porcji. Koszt to szacunek zakupu całych opakowań składników, których nie masz jeszcze na liście.</p>
   </section>
 `;
 
@@ -80,12 +81,21 @@ const added = new Map(); // id przepisu → komunikat po dodaniu składników
 
 function addToShoppingList(recipe) {
   const statuses = itemStatuses(recipe);
+  const factor = portionsOf(recipe) / recipe.portions;
   const missing = recipe.items.filter((_, i) => !statuses[i]);
-  missing.forEach(([name]) => {
+  missing.forEach(([name, amount]) => {
     const price = estimatePrice(name);
-    state.shop.unshift({ id: uid(), name, qty: 1, price, est: price > 0, done: false });
+    state.shop.unshift({ id: uid(), name, qty: 1, price, est: price > 0, done: false, note: scaleAmount(amount, factor) });
   });
   added.set(recipe.id, `Dodano ${missing.length} ${plural(missing.length, 'produkt', 'produkty', 'produktów')} do listy zakupów.`);
+  commit();
+}
+
+function changePortions(id, delta) {
+  const recipe = findRecipe(id);
+  const portions = Math.min(12, Math.max(1, portionsOf(recipe) + delta));
+  if (portions === recipe.portions) delete state.recipes.portions[id];
+  else state.recipes.portions[id] = portions;
   commit();
 }
 
@@ -107,6 +117,8 @@ export function init() {
   $('moreRecipes').addEventListener('click', () => { page += 1; render(); });
   onAction($('recipeList'), {
     add(id) { addToShoppingList(findRecipe(id)); },
+    less(id) { changePortions(id, -1); },
+    more(id) { changePortions(id, 1); },
     favorite(id) {
       const { favorites } = state.recipes;
       state.recipes.favorites = favorites.includes(id) ? favorites.filter((fav) => fav !== id) : [...favorites, id];
@@ -131,6 +143,7 @@ export function render() {
     return {
       key: recipe.id, statuses, cost: missingCost(recipe, statuses), note: added.get(recipe.id) || '',
       favorite: state.recipes.favorites.includes(recipe.id),
+      portions: portionsOf(recipe),
     };
   }), recipeCard);
 }

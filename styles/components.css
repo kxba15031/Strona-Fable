@@ -126,6 +126,17 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
 .star[aria-pressed="true"] { background: var(--yellow-100); color: var(--yellow-500); }
 .star[aria-pressed="true"] svg { fill: currentColor; transform: scale(1.1); }
 
+.stepper { display: inline-flex; align-items: center; gap: 4px; padding: 3px; border-radius: 999px; background: var(--green-50); }
+.stepper-value { min-width: 5.2em; text-align: center; font-size: .86rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.step {
+  width: 30px; height: 30px; border-radius: 50%; border: 0; padding: 0; cursor: pointer;
+  background: var(--surface); color: var(--accent-text); font-size: 1.15rem; font-weight: 700; line-height: 1;
+  transition: background .2s, transform .2s var(--ease);
+}
+.step:hover:not(:disabled) { background: var(--green-100); }
+.step:active:not(:disabled) { transform: scale(.9); }
+.step:disabled { opacity: .35; cursor: default; }
+
 .check {
   flex: none; width: 26px; height: 26px; border-radius: 9px; cursor: pointer; padding: 0;
   border: 2px solid var(--green-200); background: var(--surface); color: #fff;
@@ -164,6 +175,7 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
 .row-info { min-width: 0; }
 .row-title { font-weight: 700; overflow-wrap: anywhere; }
 .row-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; font-size: .78rem; color: var(--muted); margin-top: 2px; }
+.row-note { flex-basis: 100%; }
 .row-amount { font-weight: 800; white-space: nowrap; font-variant-numeric: tabular-nums; }
 /* Dwa przyciski po prawej: kwota schodzi pod tytuł, żeby długie nazwy mieściły się na telefonie */
 .row.stacked { grid-template-columns: auto minmax(0, 1fr) auto auto; grid-auto-flow: row; }

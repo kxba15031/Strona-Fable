@@ -77,7 +77,7 @@ export function init() {
       if (!name) return null;
       suggestPrice();
       const price = parseAmount($('shopPrice').value);
-      return { name, price, qty: parseAmount($('shopQty').value) || 1, est: priceIsSuggested && price > 0, done: false };
+      return { name, price, qty: parseAmount($('shopQty').value) || 1, est: priceIsSuggested && price > 0, done: false, note: '' };
     },
     save: (data) => state.shop.unshift({ id: uid(), ...data }),
     clear() {
@@ -137,12 +137,13 @@ function renderSummary(d, totals) {
 function renderList(totals) {
   const rows = [...state.shop]
     .sort((a, b) => Number(a.done) - Number(b.done))
-    .map((i) => ({ key: i.id, name: i.name, qty: i.qty, price: i.price, est: i.est, done: i.done }));
+    .map((i) => ({ key: i.id, name: i.name, qty: i.qty, price: i.price, est: i.est, done: i.done, note: i.note || '' }));
   syncList($('shopList'), rows, (row) => {
     const price = inlineInput({ id: `price-${row.key}`, value: row.price ? priceText(row.price) : '', placeholder: '0', label: `Cena za sztukę: ${row.name}` });
     const meta = [`${amountText(row.qty)} × `, price, ' zł'];
     if (!row.price) meta.push(el('span', 'tag', 'bez ceny'));
     else if (row.est) meta.push(el('span', 'tag', 'szac.'));
+    if (row.note) meta.push(el('span', 'row-note', `potrzeba: ${row.note}`));
     return entryRow({
       lead: checkButton(`Kupione: ${row.name}`, row.done),
       title: row.name, meta, amount: zlExact(row.qty * row.price),

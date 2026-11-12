@@ -73,7 +73,7 @@ function sanitize(saved) {
   }));
   s.shop = list(saved.shop).filter((i) => i && i.name).map((i) => ({
     id: id(i.id), name: String(i.name).slice(0, 40), qty: Math.max(0.01, Number(i.qty) || 1),
-    price: amount(i.price), est: Boolean(i.est), done: Boolean(i.done),
+    price: amount(i.price), est: Boolean(i.est), done: Boolean(i.done), note: text(i.note, 60),
   }));
   s.store = STORES.includes(saved.store) ? saved.store : '';
   s.recipes = sanitizeRecipes(saved.recipes);

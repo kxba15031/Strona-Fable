@@ -1,15 +1,16 @@
 /* Karta jednego przepisu na liście propozycji. */
 import { el } from '../../core/dom.js';
 import { plural, zl } from '../../core/format.js';
-import { starButton } from '../../components/buttons.js';
+import { starButton, stepper } from '../../components/buttons.js';
 import { icon } from '../../components/icons.js';
 import { CUISINES } from './data.js';
 import { findRecipe } from './library.js';
+import { scaleAmount } from './portions.js';
 
 const STATUS_LABEL = { list: 'na liście' };
 const products = (n) => `${n} ${plural(n, 'produkt', 'produkty', 'produktów')}`;
 
-/** `view` to dane wiersza z index.js: klucz przepisu, statusy składników, koszt, ulubiony, komunikat. */
+/** `view` to dane wiersza z index.js: klucz przepisu, statusy składników, koszt, ulubiony, porcje, komunikat. */
 export function recipeCard(view) {
   const recipe = findRecipe(view.key);
   const card = el('li', 'recipe');
@@ -19,15 +20,24 @@ export function recipeCard(view) {
   head.append(el('h3', 'recipe-name', recipe.name), starButton(`Ulubiony: ${recipe.name}`, view.favorite));
   card.append(head, el('p', 'recipe-meta', facts.filter(Boolean).join(' · ')));
 
-  const energy = el('p', 'recipe-kcal');
-  energy.append(el('b', '', `ok. ${recipe.kcal} kcal`), ` na porcję · ${recipe.portions} ${plural(recipe.portions, 'porcja', 'porcje', 'porcji')}`);
-  card.append(energy);
+  const serving = el('div', 'recipe-serving');
+  if (recipe.kcal) {
+    const energy = el('p', 'recipe-kcal');
+    energy.append(el('b', '', `ok. ${recipe.kcal} kcal`), ' na porcję');
+    serving.append(energy);
+  }
+  serving.append(stepper({
+    value: view.portions, label: `Liczba porcji: ${recipe.name}`,
+    text: `${view.portions} ${plural(view.portions, 'porcja', 'porcje', 'porcji')}`,
+  }));
+  card.append(serving);
 
   const list = el('ul', 'recipe-items');
+  const factor = view.portions / recipe.portions;
   recipe.items.forEach(([name, amount], i) => {
     const status = view.statuses[i];
     const line = el('li', status ? 'have' : '');
-    line.append(el('span', '', name), el('small', '', STATUS_LABEL[status] || amount));
+    line.append(el('span', '', name), el('small', '', STATUS_LABEL[status] || scaleAmount(amount, factor)));
     list.appendChild(line);
   });
   card.append(list, el('p', 'recipe-steps', recipe.steps));

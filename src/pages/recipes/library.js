@@ -41,6 +41,9 @@ export function itemStatuses(recipe) {
   return recipe.items.map(([name]) => (onList.has(plain(name)) ? 'list' : ''));
 }
 
+/** Liczba porcji wybrana przez użytkownika albo domyślna z przepisu. */
+export const portionsOf = (recipe) => state.recipes.portions[recipe.id] || recipe.portions;
+
 /** Szacunkowy koszt zakupu składników, których jeszcze brakuje. */
 export const missingCost = (recipe, statuses) =>
   recipe.items.reduce((total, [name], i) => total + (statuses[i] ? 0 : estimatePrice(name)), 0);
