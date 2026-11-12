@@ -1,16 +1,18 @@
 /* Zakładka „Wydatki”: codzienne wydatki, szybkie dodawanie, wykresy i limity kategorii. */
 import { EXP_CATS, expCat } from '../../core/constants.js';
-import { quickItems } from '../../core/compute.js';
+import { knownMonths, monthSpending, quickItems } from '../../core/compute.js';
 import { $, countTo, el, fillSelect, need, onAction, syncList } from '../../core/dom.js';
-import { amountText, inMonth, isIsoDate, isoToday, parseAmount, shortDate, thisMonth, uid, zl, zlExact } from '../../core/format.js';
+import { amountText, daysInMonth, isIsoDate, isoToday, monthLabel, parseAmount, shortDate, thisMonth, uid, zl, zlExact } from '../../core/format.js';
 import { commit, state } from '../../core/store.js';
-import { cancelEditButton, chip, deleteButton, editButton, submitButton } from '../../components/buttons.js';
+import { cancelEditButton, chip, deleteButton, editButton, stepper, submitButton } from '../../components/buttons.js';
 import { entryForm } from '../../components/entryForm.js';
 import { card, field, hero, nameField, selectField } from '../../components/layout.js';
 import { bar, barHeading, entryRow, inlineInput } from '../../components/row.js';
 import { initCharts, renderCharts } from './charts.js';
 
 export const template = `
+  <div class="month-nav" id="monthNav"></div>
+
   ${hero({
     titleId: 'expHeroTitle', title: 'Wydane w tym miesiącu', amountId: 'expSpent',
     meterId: 'expMeter', meterLabel: 'Ile z miesięcznej kwoty jest już wydane', noteId: 'expNote',
@@ -20,6 +22,7 @@ export const template = `
   ${card({
     icon: 'purse', tone: 'yellow', id: 'expTitle', title: 'Codzienne wydatki', sub: 'Jedzenie, paliwo, rozrywka – wszystko poza stałymi kosztami',
     body: `
+    <p class="note first" id="pastNote" hidden>Przeglądasz miniony miesiąc. Wpisy można tu usuwać, ale nie dodawać ani edytować.</p>
     <div class="quick" id="quickWrap" hidden>
       <h3 class="mini first">Szybkie dodawanie</h3>
       <div class="chips" id="quickList"></div>
@@ -33,7 +36,7 @@ export const template = `
       ${cancelEditButton()}
     </form>
     <ul class="rows" id="expList"></ul>
-    <p class="empty" id="expEmpty">Nie masz jeszcze wydatków w tym miesiącu.</p>`,
+    <p class="empty" id="expEmpty">Nie ma wydatków w tym miesiącu.</p>`,
   })}
 
   ${card({
@@ -60,6 +63,8 @@ export const template = `
 `;
 
 let expForm;
+let viewMonth = thisMonth(); // miesiąc oglądany w tej zakładce
+const viewingPast = () => viewMonth !== thisMonth();
 
 /** Data wydatku: dowolny dzień bieżącego miesiąca, najpóźniej dziś. */
 function resetDate() {
@@ -131,29 +136,80 @@ export function init() {
     commit();
   });
 
+  // Przełącznik miesiąca: tylko miesiące, w których są jakieś dane.
+  const step = (delta) => {
+    const months = knownMonths();
+    viewMonth = months[months.indexOf(viewMonth) + delta] || viewMonth;
+    expForm.forget(expForm.editing);
+    commit();
+  };
+  onAction($('monthNav'), {
+    less() { step(-1); },
+    more() { step(1); },
+    today() { viewMonth = thisMonth(); commit(); },
+  });
+
   initCharts();
 }
 
-function renderSummary(d) {
-  countTo($('expSpent'), d.spent, zlExact);
-  countTo($('expBudget'), d.budget, zl);
-  countTo($('expLeft'), d.left, zl);
-  $('expDaily').textContent = d.spent > 0 ? zl(d.spent / new Date().getDate()) : '–';
-  $('expMeter').style.width = `${d.budget > 0 ? Math.min(100, (d.spent / d.budget) * 100) : 0}%`;
-  $('expSpent').closest('.hero').classList.toggle('negative', d.income > 0 && d.left < 0);
-  if (d.income <= 0) $('expNote').textContent = 'Dodaj wypłatę w zakładce Budżet, a pokażę, ile możesz wydać';
-  else if (d.budget <= 0) $('expNote').textContent = 'Stałe koszty zajmują cały dochód';
-  else $('expNote').textContent = `Wydane ${Math.round((d.spent / d.budget) * 100)}% kwoty, która zostaje po stałych kosztach`;
+function renderMonthNav() {
+  const months = knownMonths();
+  if (!months.includes(viewMonth)) viewMonth = thisMonth();
+  const index = months.indexOf(viewMonth);
+  syncList($('monthNav'), [{ key: viewMonth, first: index === 0, last: index === months.length - 1, only: months.length === 1 }], (nav) => {
+    const wrap = el('div', 'month-nav-row');
+    wrap.hidden = nav.only;
+    wrap.append(stepper({ text: monthLabel(nav.key), label: 'Oglądany miesiąc', canLess: !nav.first, canMore: !nav.last, symbols: ['‹', '›'] }));
+    if (!nav.last) {
+      const back = el('button', 'link', 'Wróć do bieżącego');
+      back.type = 'button';
+      back.dataset.action = 'today';
+      wrap.append(back);
+    }
+    return wrap;
+  });
 }
 
-function renderExpenses() {
-  const rows = inMonth(state.expenses, thisMonth())
+/**
+ * Podsumowanie oglądanego miesiąca. Dla bieżącego liczby pochodzą z `compute()`,
+ * dla minionego z zapisanej historii (jeśli miesiąc był wtedy zapisany).
+ */
+function renderSummary(d, spending) {
+  const past = viewingPast();
+  const saved = state.history.find((h) => h.month === viewMonth);
+  const known = !past || Boolean(saved);
+  const income = past ? (saved ? saved.income : 0) : d.income;
+  const budget = past ? (saved ? saved.income - saved.fixed : 0) : d.budget;
+  const left = budget - spending.spent;
+  const days = past ? daysInMonth(new Date(Number(viewMonth.slice(0, 4)), Number(viewMonth.slice(5)) - 1, 1)) : new Date().getDate();
+
+  $('expHeroTitle').textContent = past ? `Wydane: ${monthLabel(viewMonth)}` : 'Wydane w tym miesiącu';
+  countTo($('expSpent'), spending.spent, zlExact);
+  if (known) {
+    countTo($('expBudget'), budget, zl);
+    countTo($('expLeft'), left, zl);
+  } else {
+    $('expBudget').textContent = '–';
+    $('expLeft').textContent = '–';
+  }
+  $('expDaily').textContent = spending.spent > 0 ? zl(spending.spent / days) : '–';
+  $('expMeter').style.width = `${budget > 0 ? Math.min(100, (spending.spent / budget) * 100) : 0}%`;
+  $('expSpent').closest('.hero').classList.toggle('negative', income > 0 && left < 0);
+  if (!known) $('expNote').textContent = 'Dla tego miesiąca nie mam zapisanego dochodu';
+  else if (income <= 0) $('expNote').textContent = 'Dodaj wypłatę w zakładce Budżet, a pokażę, ile możesz wydać';
+  else if (budget <= 0) $('expNote').textContent = 'Stałe koszty zajmują cały dochód';
+  else $('expNote').textContent = `Wydane ${Math.round((spending.spent / budget) * 100)}% kwoty, która zostaje po stałych kosztach`;
+}
+
+function renderExpenses(spending) {
+  const past = viewingPast();
+  const rows = [...spending.items]
     .sort((a, b) => b.date.localeCompare(a.date))
-    .map((x) => ({ key: x.id, name: x.name, amount: x.amount, cat: x.cat, date: x.date, editing: x.id === expForm.editing }));
+    .map((x) => ({ key: x.id, name: x.name, amount: x.amount, cat: x.cat, date: x.date, editing: x.id === expForm.editing, past }));
   syncList($('expList'), rows, (row) => {
     const cat = expCat(row.cat);
-    // Wpłaty na cele edytuje się w zakładce Cele, tutaj można je tylko usunąć.
-    const actions = row.cat === 'goal' ? [] : [editButton(`Edytuj wydatek: ${row.name}`)];
+    // Wpłaty na cele edytuje się w zakładce Cele, a wpisy z minionych miesięcy można tylko usuwać.
+    const actions = row.cat === 'goal' || row.past ? [] : [editButton(`Edytuj wydatek: ${row.name}`)];
     return entryRow({
       lead: cat, title: row.name, meta: `${cat.name} · ${shortDate(row.date)}`, amount: zlExact(row.amount),
       actions: [...actions, deleteButton(`Usuń wydatek: ${row.name}`)],
@@ -161,11 +217,13 @@ function renderExpenses() {
     });
   });
   $('expEmpty').hidden = rows.length > 0;
+  $('expForm').hidden = past;
+  $('pastNote').hidden = !past;
 }
 
 function renderQuick() {
   const items = quickItems().map((q, i) => ({ key: i, name: q.name, amount: q.amount }));
-  $('quickWrap').hidden = !items.length;
+  $('quickWrap').hidden = !items.length || viewingPast();
   syncList($('quickList'), items, (q) => chip({
     label: `${q.name} · ${Number.isInteger(q.amount) ? zl(q.amount) : zlExact(q.amount)}`,
     value: q.key, action: 'add', title: `Dodaj wydatek: ${q.name}, ${zlExact(q.amount)}`,
@@ -187,9 +245,13 @@ function renderLimits(d) {
 }
 
 export function render(d) {
-  renderSummary(d);
+  renderMonthNav();
+  const spending = monthSpending(viewMonth);
+  renderSummary(d, spending);
   renderQuick();
-  renderExpenses();
-  renderCharts(d);
+  renderExpenses(spending);
+  renderCharts(spending);
   renderLimits(d);
+  // Limity dotyczą bieżącego miesiąca, więc przy przeglądaniu minionych są schowane.
+  $('limitTitle').closest('.card').hidden = viewingPast();
 }

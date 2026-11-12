@@ -135,3 +135,8 @@
 .recipe-eaten[aria-pressed="true"] { color: var(--muted); }
 .pantry-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; margin-bottom: 12px; }
 .pantry-show { display: block; margin: 14px auto 0; }
+.month-nav:empty { display: none; }
+.month-nav-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 14px; }
+.month-nav .stepper { background: var(--green-100); }
+.month-nav .stepper-value { min-width: 9.5em; text-transform: capitalize; }
+@media (min-width: 880px) { .month-nav { grid-column: 1 / -1; } }

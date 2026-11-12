@@ -34,8 +34,9 @@ export function recipeCard(view) {
     serving.append(energy);
   }
   serving.append(stepper({
-    value: view.portions, label: `Liczba porcji: ${recipe.name}`,
+    label: `Liczba porcji: ${recipe.name}`,
     text: `${view.portions} ${plural(view.portions, 'porcja', 'porcje', 'porcji')}`,
+    canLess: view.portions > 1, canMore: view.portions < 12,
   }));
   card.append(serving);
 

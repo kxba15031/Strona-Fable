@@ -29,15 +29,18 @@ export const checkButton = (label, pressed) => toggleButton('toggle', 'check', '
 /** Gwiazdka „ulubione”. */
 export const starButton = (label, pressed) => toggleButton('favorite', 'star', 'star', label, pressed);
 
-/** Licznik z przyciskami − i + (akcje „less” i „more”). */
-export function stepper({ value, text, label, min = 1, max = 12 }) {
+/**
+ * Przełącznik „wstecz / dalej” wokół wartości (akcje „less” i „more”):
+ * liczba porcji, wybrany miesiąc. `symbols` to znaki na przyciskach.
+ */
+export function stepper({ text, label, canLess = true, canMore = true, symbols = ['−', '+'] }) {
   const wrap = el('div', 'stepper');
   wrap.setAttribute('role', 'group');
   wrap.setAttribute('aria-label', label);
-  const less = actionButton('less', 'step', 'Mniej', '−');
-  const more = actionButton('more', 'step', 'Więcej', '+');
-  less.disabled = value <= min;
-  more.disabled = value >= max;
+  const less = actionButton('less', 'step', 'Mniej', symbols[0]);
+  const more = actionButton('more', 'step', 'Więcej', symbols[1]);
+  less.disabled = !canLess;
+  more.disabled = !canMore;
   wrap.append(less, el('span', 'stepper-value', text), more);
   return wrap;
 }

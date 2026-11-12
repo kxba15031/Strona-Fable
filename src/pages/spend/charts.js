@@ -1,16 +1,16 @@
 /* Wykresy wydatków: słupki kategorii (jedna barwa, wartości przy słupkach) i kolumny dzień po dniu. */
 import { EXP_CATS, GOAL_CAT } from '../../core/constants.js';
 import { $, el, syncList } from '../../core/dom.js';
-import { daysInMonth, inMonth, plural, thisMonth, zl, zlExact } from '../../core/format.js';
-import { state } from '../../core/store.js';
+import { daysInMonth, plural, thisMonth, zl, zlExact } from '../../core/format.js';
 import { bar, barHeading } from '../../components/row.js';
 
 let perDay = [];
 let pickedDay = 0;
+let shownMonth = '';
 
 function describeDay(day) {
   const { total, count } = perDay[day - 1];
-  const date = `${day}.${thisMonth().slice(5)}`;
+  const date = `${day}.${shownMonth.slice(5)}`;
   return count ? `${date}: ${zlExact(total)} (${count} ${plural(count, 'wydatek', 'wydatki', 'wydatków')})` : `${date}: bez wydatków`;
 }
 
@@ -28,17 +28,19 @@ export function initCharts() {
   ['pointerover', 'click', 'focusin'].forEach((type) => $('dayCols').addEventListener(type, pick));
 }
 
-export function renderCharts(d) {
-  const items = inMonth(state.expenses, thisMonth());
+/** @param spending  wynik `monthSpending()` dla miesiąca, który oglądamy */
+export function renderCharts({ month, items, spent, spentByCat }) {
+  if (month !== shownMonth) pickedDay = 0;
+  shownMonth = month;
   $('spendChartEmpty').hidden = items.length > 0;
   $('spendCharts').hidden = !items.length;
   if (!items.length) return;
 
   const cats = [...EXP_CATS, GOAL_CAT]
-    .map((cat) => ({ key: cat.id, name: cat.name, total: d.spentByCat[cat.id] || 0 }))
+    .map((cat) => ({ key: cat.id, name: cat.name, total: spentByCat[cat.id] || 0 }))
     .filter((cat) => cat.total > 0)
     .sort((a, b) => b.total - a.total)
-    .map((cat, _, all) => ({ ...cat, width: cat.total / all[0].total, share: Math.round((cat.total / d.spent) * 100) }));
+    .map((cat, _, all) => ({ ...cat, width: cat.total / all[0].total, share: Math.round((cat.total / spent) * 100) }));
   syncList($('catBars'), cats, (cat) => {
     const value = el('b', '', zl(cat.total));
     value.append(el('small', '', `${cat.share}%`));
@@ -47,8 +49,10 @@ export function renderCharts(d) {
     return row;
   });
 
-  const today = new Date().getDate();
-  perDay = Array.from({ length: daysInMonth() }, () => ({ total: 0, count: 0 }));
+  // W minionym miesiącu wszystkie dni są już „za nami”; w bieżącym tylko do dziś.
+  const first = new Date(Number(month.slice(0, 4)), Number(month.slice(5)) - 1, 1);
+  const today = month === thisMonth() ? new Date().getDate() : daysInMonth(first);
+  perDay = Array.from({ length: daysInMonth(first) }, () => ({ total: 0, count: 0 }));
   items.forEach((x) => {
     const day = perDay[Number(x.date.slice(8)) - 1];
     day.total += x.amount;
@@ -56,12 +60,12 @@ export function renderCharts(d) {
   });
   const max = Math.max(...perDay.map((day) => day.total));
   $('dayMax').textContent = `${zl(max)} – najwyższy dzień`;
-  const cols = perDay.map((day, i) => ({ key: i + 1, height: day.total / max, future: i + 1 > today }));
+  const cols = perDay.map((day, i) => ({ key: i + 1, month, height: day.total / max, count: day.count, future: i + 1 > today }));
   syncList($('dayCols'), cols, (col) => {
     const node = el('button', 'day');
     node.type = 'button';
     node.disabled = col.future;
-    node.setAttribute('aria-label', col.future ? `${col.key}.${thisMonth().slice(5)}` : describeDay(col.key));
+    node.setAttribute('aria-label', col.future ? `${col.key}.${month.slice(5)}` : describeDay(col.key));
     const column = el('i');
     column.style.height = col.height > 0 ? `${Math.max(3, col.height * 100)}%` : '0';
     node.appendChild(column);

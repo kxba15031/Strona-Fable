@@ -12,15 +12,26 @@ function daysToPayday() {
   return daysInMonth(now) - today + Math.min(state.payday, daysInMonth(next));
 }
 
+/** Wydatki wybranego miesiąca: wpisy, suma i sumy według kategorii. */
+export function monthSpending(month) {
+  const items = inMonth(state.expenses, month);
+  const spentByCat = {};
+  items.forEach((x) => { spentByCat[x.cat] = (spentByCat[x.cat] || 0) + x.amount; });
+  return { month, items, spent: sum(items), spentByCat };
+}
+
+/** Miesiące, dla których są jakieś dane, od najstarszego; bieżący jest zawsze ostatni. */
+export function knownMonths() {
+  const months = new Set([...state.expenses.map((x) => x.date.slice(0, 7)), ...state.history.map((h) => h.month), thisMonth()]);
+  return [...months].filter((month) => month <= thisMonth()).sort();
+}
+
 /** Liczby bieżącego miesiąca, z których korzystają wszystkie zakładki. */
 export function compute() {
   const month = thisMonth();
-  const expenses = inMonth(state.expenses, month);
-  const spentByCat = {};
-  expenses.forEach((x) => { spentByCat[x.cat] = (spentByCat[x.cat] || 0) + x.amount; });
+  const { spent, spentByCat } = monthSpending(month);
 
   const costs = sum(state.costs);
-  const spent = sum(expenses);
   const extra = sum(inMonth(state.extras, month));
   const income = state.income + extra;
   const budget = income - costs;

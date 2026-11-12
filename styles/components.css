@@ -50,6 +50,7 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
 .mini.first { margin-top: 0; }
 .note { font-size: .84rem; color: var(--muted); margin-top: 10px; }
 .note:empty { display: none; }
+.note.first { margin: 0 0 12px; }
 .empty { text-align: center; color: var(--muted); font-size: .88rem; padding: 18px 8px 4px; }
 .disclaimer { font-size: .72rem; color: var(--muted); margin-top: 10px; }
 .tag { font-size: .68rem; font-weight: 700; padding: 2px 7px; border-radius: 999px; background: var(--yellow-100); color: var(--amber-text); white-space: nowrap; }
