@@ -2,9 +2,9 @@
 import { EXP_CATS, expCat } from '../../core/constants.js';
 import { knownMonths, monthSpending, quickItems } from '../../core/compute.js';
 import { $, countTo, el, fillSelect, need, onAction, syncList } from '../../core/dom.js';
-import { amountText, daysInMonth, isIsoDate, isoToday, monthLabel, parseAmount, shortDate, thisMonth, uid, zl, zlExact } from '../../core/format.js';
+import { amountText, daysInMonth, isIsoDate, isoToday, monthLabel, monthStart, parseAmount, shortDate, thisMonth, uid, zl, zlExact } from '../../core/format.js';
 import { commit, state } from '../../core/store.js';
-import { cancelEditButton, chip, deleteButton, editButton, stepper, submitButton } from '../../components/buttons.js';
+import { cancelEditButton, chip, deleteButton, editButton, linkButton, stepper, submitButton } from '../../components/buttons.js';
 import { entryForm } from '../../components/entryForm.js';
 import { card, field, hero, nameField, selectField } from '../../components/layout.js';
 import { bar, barHeading, entryRow, inlineInput } from '../../components/row.js';
@@ -160,12 +160,7 @@ function renderMonthNav() {
     const wrap = el('div', 'month-nav-row');
     wrap.hidden = nav.only;
     wrap.append(stepper({ text: monthLabel(nav.key), label: 'Oglądany miesiąc', canLess: !nav.first, canMore: !nav.last, symbols: ['‹', '›'] }));
-    if (!nav.last) {
-      const back = el('button', 'link', 'Wróć do bieżącego');
-      back.type = 'button';
-      back.dataset.action = 'today';
-      wrap.append(back);
-    }
+    if (!nav.last) wrap.append(linkButton({ label: 'Wróć do bieżącego', action: 'today' }));
     return wrap;
   });
 }
@@ -181,7 +176,7 @@ function renderSummary(d, spending) {
   const income = past ? (saved ? saved.income : 0) : d.income;
   const budget = past ? (saved ? saved.income - saved.fixed : 0) : d.budget;
   const left = budget - spending.spent;
-  const days = past ? daysInMonth(new Date(Number(viewMonth.slice(0, 4)), Number(viewMonth.slice(5)) - 1, 1)) : new Date().getDate();
+  const days = past ? daysInMonth(monthStart(viewMonth)) : new Date().getDate();
 
   $('expHeroTitle').textContent = past ? `Wydane: ${monthLabel(viewMonth)}` : 'Wydane w tym miesiącu';
   countTo($('expSpent'), spending.spent, zlExact);

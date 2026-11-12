@@ -31,17 +31,19 @@ export function plural(n, one, few, many) {
   return d >= 2 && d <= 4 && (h < 12 || h > 14) ? few : many;
 }
 export const daysText = (n) => `${n} ${plural(n, 'dzień', 'dni', 'dni')}`;
+export const productsText = (n) => `${n} ${plural(n, 'produkt', 'produkty', 'produktów')}`;
 
-export const isoToday = () => {
-  const n = new Date();
-  return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
-};
+/** Data w zapisie RRRR-MM-DD (czas lokalny). */
+export const toIso = (date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+export const isoToday = () => toIso(new Date());
 export const thisMonth = () => isoToday().slice(0, 7);
 export const isIsoDate = (v) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
 export const isIsoMonth = (v) => typeof v === 'string' && /^\d{4}-\d{2}$/.test(v);
 export const shortDate = (iso) => `${Number(iso.slice(8, 10))}.${iso.slice(5, 7)}`;
-export const monthLabel = (ym) => new Date(Number(ym.slice(0, 4)), Number(ym.slice(5, 7)) - 1, 1)
-  .toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' });
+/** Pierwszy dzień miesiąca zapisanego jako RRRR-MM. */
+export const monthStart = (ym) => new Date(Number(ym.slice(0, 4)), Number(ym.slice(5, 7)) - 1, 1);
+export const monthLabel = (ym) => monthStart(ym).toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' });
 export const daysInMonth = (date = new Date()) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
 
 export const inMonth = (list, ym) => list.filter((x) => x.date.slice(0, 7) === ym);

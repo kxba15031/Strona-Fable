@@ -2,7 +2,7 @@
 import { STORE_LINKS, STORES } from '../../core/constants.js';
 import { shopTotals } from '../../core/compute.js';
 import { $, countTo, el, need, onAction, syncList } from '../../core/dom.js';
-import { amountText, isoToday, parseAmount, plural, priceText, uid, zl, zlExact } from '../../core/format.js';
+import { amountText, isoToday, parseAmount, plural, priceText, productsText, uid, zl, zlExact } from '../../core/format.js';
 import { estimatePrice, HINTS } from '../../core/prices.js';
 import { commit, state } from '../../core/store.js';
 import { checkButton, chipHtml, deleteButton, selectChip, submitButton } from '../../components/buttons.js';
@@ -104,7 +104,7 @@ export function init() {
   $('shopToExpenses').addEventListener('click', () => {
     const { done, boughtCount } = shopTotals();
     if (done > 0) {
-      const name = `Zakupy (${boughtCount} ${plural(boughtCount, 'produkt', 'produkty', 'produktów')})`;
+      const name = `Zakupy (${productsText(boughtCount)})`;
       state.expenses.unshift({ id: uid(), goalId: '', name, amount: Math.round(done * 100) / 100, cat: 'food', date: isoToday() });
     }
     removeBought();

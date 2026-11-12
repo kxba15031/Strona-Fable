@@ -1,14 +1,13 @@
 /* Karta jednego przepisu na liście propozycji. */
 import { el } from '../../core/dom.js';
-import { plural, shortDate, zl } from '../../core/format.js';
-import { deleteButton, editButton, starButton, stepper } from '../../components/buttons.js';
+import { plural, productsText, shortDate, zl } from '../../core/format.js';
+import { deleteButton, editButton, linkButton, starButton, stepper } from '../../components/buttons.js';
 import { icon } from '../../components/icons.js';
 import { CUISINES } from './data.js';
 import { findRecipe } from './library.js';
 import { scaleAmount } from './portions.js';
 
 const STATUS_LABEL = { home: 'mam', list: 'na liście' };
-const products = (n) => `${n} ${plural(n, 'produkt', 'produkty', 'produktów')}`;
 
 /** `view` to dane wiersza z index.js: klucz przepisu, statusy składników, koszt, ulubiony, porcje, data zjedzenia, komunikat. */
 export function recipeCard(view) {
@@ -57,21 +56,19 @@ export function recipeCard(view) {
   add.dataset.action = 'add';
   add.disabled = missing === 0;
   add.innerHTML = `${icon(missing ? 'plus' : 'check')}<span></span>`;
-  add.lastChild.textContent = missing ? `Dodaj ${products(missing)} do listy zakupów` : 'Niczego nie trzeba dokupować';
+  add.lastChild.textContent = missing ? `Dodaj ${productsText(missing)} do listy zakupów` : 'Niczego nie trzeba dokupować';
   card.append(add);
 
-  const eaten = el('button', 'link recipe-eaten', view.eaten ? `Zjedzone ${shortDate(view.eaten)} · cofnij` : 'Oznacz jako zjedzone dziś');
-  eaten.type = 'button';
-  eaten.dataset.action = 'eaten';
+  const eaten = linkButton({
+    label: view.eaten ? `Zjedzone ${shortDate(view.eaten)} · cofnij` : 'Oznacz jako zjedzone dziś',
+    action: 'eaten', className: 'recipe-eaten',
+  });
   eaten.setAttribute('aria-pressed', String(Boolean(view.eaten)));
   card.append(eaten);
 
   if (view.note) {
     const note = el('p', 'recipe-note', `${view.note} `);
-    const link = el('button', 'link', 'Przejdź do zakupów');
-    link.type = 'button';
-    link.dataset.action = 'shop';
-    note.append(link);
+    note.append(linkButton({ label: 'Przejdź do zakupów', action: 'shop' }));
     card.append(note);
   }
   return card;

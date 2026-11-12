@@ -2,7 +2,7 @@
 import { catById } from '../../core/constants.js';
 import { nextPayment } from '../../core/compute.js';
 import { $, syncList } from '../../core/dom.js';
-import { daysText, sum, zl } from '../../core/format.js';
+import { daysText, shortDate, sum, toIso, zl } from '../../core/format.js';
 import { state } from '../../core/store.js';
 import { card } from '../../components/layout.js';
 import { entryRow } from '../../components/row.js';
@@ -19,8 +19,7 @@ export const subscriptionsCard = card({
 
 function renewalText(payment) {
   if (!payment) return 'ustaw dzień płatności, żeby zobaczyć datę odnowienia';
-  const date = `${payment.date.getDate()}.${String(payment.date.getMonth() + 1).padStart(2, '0')}`;
-  return `odnowienie ${date} · ${payment.inDays === 0 ? 'dziś' : `za ${daysText(payment.inDays)}`}`;
+  return `odnowienie ${shortDate(toIso(payment.date))} · ${payment.inDays === 0 ? 'dziś' : `za ${daysText(payment.inDays)}`}`;
 }
 
 export function renderSubscriptions(d) {

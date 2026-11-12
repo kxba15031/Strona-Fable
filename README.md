@@ -39,19 +39,21 @@ src/
     dom.js              pomocnicze funkcje do budowania i aktualizacji strony
     prices.js           szacunkowe ceny produktów
   components/           elementy wielokrotnego użytku
-    buttons.js          przyciski: usuń, edytuj, zaznacz, pastylki, wyślij formularz
-    layout.js           karta, pole formularza, zielona karta podsumowania
+    buttons.js          przyciski: usuń, edytuj, zaznacz, gwiazdka, licznik −/+, link, pastylki
+    layout.js           karta, pola formularza (tekst, lista, wyszukiwanie, pole wyboru), podsumowanie
     row.js              wiersz listy, pole w wierszu, paski postępu
     entryForm.js        formularz dodawania i edycji wpisu
     tabs.js             zakładki
     themeToggle.js      przełącznik trybu ciemnego
     icons.js            ikony
   pages/                jedna zakładka = jeden folder
-    budget/             Budżet: index.js, agent.js, ai.js, chat.js, donut.js
+    budget/             Budżet: index.js, agent.js, ai.js, chat.js, donut.js, subscriptions.js
     spend/              Wydatki: index.js, charts.js
     goals/              Cele: index.js, calculator.js
     shop/               Zakupy: index.js
-    recipes/            Przepisy: index.js, data.js (lista przepisów)
+    recipes/            Przepisy: index.js, card.js (karta), library.js (filtry, braki),
+                        portions.js (przeliczanie porcji), pantry.js (co mam w domu),
+                        form.js (własne przepisy), data.js (lista przepisów)
   features/             funkcje całej strony
     backup.js           kopia zapasowa i czyszczenie danych
     keyboard.js         chowanie klawiatury na telefonie

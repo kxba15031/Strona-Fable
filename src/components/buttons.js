@@ -45,6 +45,14 @@ export function stepper({ text, label, canLess = true, canMore = true, symbols =
   return wrap;
 }
 
+/** Przycisk wyglądający jak link, z akcją dla `onAction`. */
+export function linkButton({ label, action, className = '' }) {
+  const button = el('button', `link ${className}`, label);
+  button.type = 'button';
+  button.dataset.action = action;
+  return button;
+}
+
 /** Przycisk-pastylka budowany dla danych, np. szybkie wydatki. */
 export function chip({ label, value = '', action = 'pick', title = '' }) {
   const button = el('button', 'chip', label);

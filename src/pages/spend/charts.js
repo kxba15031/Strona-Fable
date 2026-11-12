@@ -1,7 +1,7 @@
 /* Wykresy wydatków: słupki kategorii (jedna barwa, wartości przy słupkach) i kolumny dzień po dniu. */
 import { EXP_CATS, GOAL_CAT } from '../../core/constants.js';
 import { $, el, syncList } from '../../core/dom.js';
-import { daysInMonth, plural, thisMonth, zl, zlExact } from '../../core/format.js';
+import { daysInMonth, monthStart, plural, thisMonth, zl, zlExact } from '../../core/format.js';
 import { bar, barHeading } from '../../components/row.js';
 
 let perDay = [];
@@ -50,9 +50,9 @@ export function renderCharts({ month, items, spent, spentByCat }) {
   });
 
   // W minionym miesiącu wszystkie dni są już „za nami”; w bieżącym tylko do dziś.
-  const first = new Date(Number(month.slice(0, 4)), Number(month.slice(5)) - 1, 1);
-  const today = month === thisMonth() ? new Date().getDate() : daysInMonth(first);
-  perDay = Array.from({ length: daysInMonth(first) }, () => ({ total: 0, count: 0 }));
+  const length = daysInMonth(monthStart(month));
+  const today = month === thisMonth() ? new Date().getDate() : length;
+  perDay = Array.from({ length }, () => ({ total: 0, count: 0 }));
   items.forEach((x) => {
     const day = perDay[Number(x.date.slice(8)) - 1];
     day.total += x.amount;

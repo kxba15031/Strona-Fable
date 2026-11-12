@@ -1,6 +1,6 @@
 /* Zakładka „Przepisy”: propozycje posiłków ze składnikami do dodania na listę zakupów. */
 import { $, onAction, scrollToNode, syncList } from '../../core/dom.js';
-import { isoToday, plural, uid } from '../../core/format.js';
+import { isoToday, plural, productsText, uid } from '../../core/format.js';
 import { estimatePrice } from '../../core/prices.js';
 import { commit, state } from '../../core/store.js';
 import { chipHtml, selectChip } from '../../components/buttons.js';
@@ -98,7 +98,7 @@ function addToShoppingList(recipe) {
     const price = estimatePrice(name);
     state.shop.unshift({ id: uid(), name, qty: 1, price, est: price > 0, done: false, note: scaleAmount(amount, factor) });
   });
-  added.set(recipe.id, `Dodano ${missing.length} ${plural(missing.length, 'produkt', 'produkty', 'produktów')} do listy zakupów.`);
+  added.set(recipe.id, `Dodano ${productsText(missing.length)} do listy zakupów.`);
   commit();
 }
 
@@ -116,14 +116,14 @@ function removeOwnRecipe(id) {
   commit();
 }
 
-/** Pokazuje wskazany wybór od początku i przewija do listy. */
-function show(choice) {
+/** Pokazuje wskazany wybór od początku (bez wyszukiwania); `scroll` przewija do listy. */
+function show(choice, { scroll = false } = {}) {
   ({ meal = meal, filter = filter } = choice);
   query = '';
   $('recipeSearch').value = '';
   reshuffle();
   render();
-  scrollToNode($('recipeListTitle'), 'start');
+  if (scroll) scrollToNode($('recipeListTitle'), 'start');
 }
 
 function changePortions(id, delta) {
@@ -136,20 +136,14 @@ function changePortions(id, delta) {
 
 export function init() {
   onAction($('mealChips'), {
-    pick(_, button) {
-      meal = button.dataset.value;
-      query = '';
-      $('recipeSearch').value = '';
-      reshuffle();
-      render();
-    },
+    pick(_, button) { show({ meal: button.dataset.value }); },
   });
   $('recipeSearch').addEventListener('input', (e) => { query = e.target.value; reshuffle(); render(); });
   onAction($('recipeFilters'), {
     pick(_, button) { filter = button.dataset.value; reshuffle(); render(); },
   });
-  initPantry({ onShowRecipes: () => show({ filter: 'home' }) });
-  ownForm = initRecipeForm({ onSaved: (recipe) => show({ meal: recipe.meal, filter: 'own' }) });
+  initPantry({ onShowRecipes: () => show({ filter: 'home' }, { scroll: true }) });
+  ownForm = initRecipeForm({ onSaved: (recipe) => show({ meal: recipe.meal, filter: 'own' }, { scroll: true }) });
   reshuffle();
   $('moreRecipes').addEventListener('click', () => { page += 1; render(); });
   onAction($('recipeList'), {
