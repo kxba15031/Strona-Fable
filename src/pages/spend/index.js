@@ -1,7 +1,7 @@
 /* Zakładka „Wydatki”: codzienne wydatki, szybkie dodawanie, wykresy i limity kategorii. */
 import { EXP_CATS, expCat } from '../../core/constants.js';
 import { knownMonths, monthSpending, quickItems } from '../../core/compute.js';
-import { $, countTo, el, fillSelect, need, onAction, syncList } from '../../core/dom.js';
+import { $, countTo, el, fillSelect, keyOf, need, onAction, syncList } from '../../core/dom.js';
 import { amountText, daysInMonth, isIsoDate, isoToday, monthLabel, monthStart, parseAmount, shortDate, thisMonth, uid, zl, zlExact } from '../../core/format.js';
 import { commit, state } from '../../core/store.js';
 import { cancelEditButton, chip, deleteButton, editButton, linkButton, stepper, submitButton } from '../../components/buttons.js';
@@ -129,7 +129,7 @@ export function init() {
   });
 
   $('limitList').addEventListener('change', (e) => {
-    const cat = e.target.closest('[data-key]').dataset.key;
+    const cat = keyOf(e.target);
     const limit = parseAmount(e.target.value);
     if (limit) state.limits[cat] = limit;
     else delete state.limits[cat];

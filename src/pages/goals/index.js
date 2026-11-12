@@ -1,6 +1,6 @@
 /* Zakładka „Cele”: cele oszczędnościowe z wpłatami oraz kalkulator inwestycji. */
 import { goalNeed } from '../../core/compute.js';
-import { $, el, flagInvalid, need, onAction, syncList } from '../../core/dom.js';
+import { $, el, flagInvalid, keyOf, need, onAction, syncList } from '../../core/dom.js';
 import { amountText, isIsoMonth, isoToday, monthLabel, parseAmount, plural, thisMonth, uid, zl } from '../../core/format.js';
 import { commit, state } from '../../core/store.js';
 import { deleteButton, submitButton } from '../../components/buttons.js';
@@ -56,7 +56,7 @@ export function init() {
   // Wpłata na cel: zwiększa odłożoną kwotę i zapisuje się jako wydatek miesiąca.
   $('goalList').addEventListener('submit', (e) => {
     e.preventDefault();
-    const goal = state.goals.find((g) => g.id === e.target.closest('[data-key]').dataset.key);
+    const goal = state.goals.find((g) => g.id === keyOf(e.target));
     const input = e.target.querySelector('input');
     const amount = Math.min(parseAmount(input.value), goal.target - goal.saved);
     if (!amount) { flagInvalid(input); return; }

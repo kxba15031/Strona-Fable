@@ -2,7 +2,7 @@
 import { STORE_LINKS, STORES } from '../../core/constants.js';
 import { shopTotals } from '../../core/compute.js';
 import { departmentOf, departmentOrder } from '../../core/departments.js';
-import { $, countTo, el, need, onAction, syncList } from '../../core/dom.js';
+import { $, countTo, el, keyOf, need, onAction, syncList } from '../../core/dom.js';
 import { amountText, isoToday, parseAmount, plural, priceText, productsText, uid, zl, zlExact } from '../../core/format.js';
 import { estimatePrice, HINTS } from '../../core/prices.js';
 import { commit, state } from '../../core/store.js';
@@ -120,7 +120,7 @@ export function init() {
   });
   $('shopList').addEventListener('change', (e) => {
     if (!e.target.matches('.inline-input')) return;
-    Object.assign(find(e.target.closest('[data-key]').dataset.key), { price: parseAmount(e.target.value), est: false });
+    Object.assign(find(keyOf(e.target)), { price: parseAmount(e.target.value), est: false });
     commit();
   });
 

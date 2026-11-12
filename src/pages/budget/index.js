@@ -1,7 +1,7 @@
 /* Zakładka „Budżet”: podsumowanie, agent, terminy płatności, wypłata, stałe koszty, historia. */
 import { CATEGORIES, catById } from '../../core/constants.js';
 import { compute, dueList, forecastText } from '../../core/compute.js';
-import { $, countTo, el, fillSelect, need, onAction, syncList } from '../../core/dom.js';
+import { $, countTo, el, fillSelect, keyOf, need, onAction, syncList } from '../../core/dom.js';
 import { amountText, clampDay, daysText, inMonth, isoToday, monthLabel, parseAmount, plural, shortDate, thisMonth, uid, zl, zlExact } from '../../core/format.js';
 import { commit, state } from '../../core/store.js';
 import { cancelEditButton, checkButton, chipHtml, deleteButton, editButton, submitButton } from '../../components/buttons.js';
@@ -175,7 +175,7 @@ export function init() {
   });
   $('costList').addEventListener('change', (e) => {
     if (!e.target.matches('.day-edit')) return;
-    const cost = state.costs.find((c) => c.id === e.target.closest('[data-key]').dataset.key);
+    const cost = state.costs.find((c) => c.id === keyOf(e.target));
     if (!cost) return;
     cost.day = clampDay(e.target.value);
     commit();

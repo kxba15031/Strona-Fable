@@ -94,6 +94,12 @@ export function syncList(container, items, build) {
   if (!unchanged) container.replaceChildren(...next);
 }
 
+/** Klucz wiersza listy (`data-key`), w którym leży element, albo pusty tekst. */
+export function keyOf(node) {
+  const row = node.closest('[data-key]');
+  return row ? row.dataset.key : '';
+}
+
 /**
  * Obsługa kliknięć przycisków z atrybutem `data-action` wewnątrz kontenera.
  * Handler dostaje klucz wiersza (`data-key`) i sam przycisk.
@@ -103,7 +109,6 @@ export function onAction(container, handlers) {
     const button = e.target.closest('[data-action]');
     if (!button || !container.contains(button)) return;
     const handler = handlers[button.dataset.action];
-    const row = button.closest('[data-key]');
-    if (handler) handler(row ? row.dataset.key : '', button);
+    if (handler) handler(keyOf(button), button);
   });
 }
