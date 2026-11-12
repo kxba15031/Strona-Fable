@@ -6,9 +6,16 @@ import { commit, state } from '../../core/store.js';
 import { chipHtml, selectChip } from '../../components/buttons.js';
 import { icon } from '../../components/icons.js';
 import { openTab } from '../../components/tabs.js';
-import { MEALS, RECIPES } from './data.js';
+import { CUISINES, MEALS, RECIPES } from './data.js';
 
 const PER_PAGE = 3;
+
+const FILTERS = [
+  { id: 'all', label: 'Wszystkie', test: () => true },
+  { id: 'quick', label: 'Do 15 minut', test: (recipe) => recipe.minutes <= 15 },
+  { id: 'veg', label: 'Wegetariańskie', test: (recipe) => recipe.vegetarian },
+  { id: 'world', label: 'Kuchnie świata', test: (recipe) => recipe.cuisine && recipe.cuisine !== 'pl' },
+];
 
 export const template = `
   <section class="card agent reveal" aria-labelledby="recipesTitle">
@@ -22,13 +29,21 @@ export const template = `
     <div class="chips wrap" id="mealChips" role="group" aria-label="Posiłek">
       ${MEALS.map((meal) => chipHtml({ label: meal.question, value: meal.id })).join('')}
     </div>
+    <h3 class="mini">Pokaż</h3>
+    <div class="chips wrap" id="recipeFilters" role="group" aria-label="Rodzaj przepisów">
+      ${FILTERS.map((filter) => chipHtml({ label: filter.label, value: filter.id })).join('')}
+    </div>
   </section>
 
   <section class="card reveal" aria-labelledby="recipeListTitle">
     <div class="recipes-head">
-      <h2 id="recipeListTitle"></h2>
+      <div>
+        <h2 id="recipeListTitle"></h2>
+        <p class="sub" id="recipeCount"></p>
+      </div>
       <button type="button" class="link" id="moreRecipes">Pokaż inne</button>
     </div>
+    <p class="empty" id="recipeEmpty">Nie mam przepisów dla tego wyboru. Zmień filtr powyżej.</p>
     <ul class="stack" id="recipeList"></ul>
     <p class="disclaimer">Koszt to szacunek zakupu całych opakowań składników, których nie masz jeszcze na liście.</p>
   </section>
@@ -37,12 +52,25 @@ export const template = `
 /** Pora dnia podpowiada posiłek, od którego zaczynamy. */
 function mealForNow() {
   const hour = new Date().getHours();
-  if (hour < 10) return 'breakfast';
-  return hour < 16 ? 'dinner' : 'supper';
+  if (hour < 10) return 'b';
+  return hour < 16 ? 'd' : 's';
 }
 
 let meal = mealForNow();
+let filter = 'all';
 let page = 0;
+let order = []; // wylosowana kolejność przepisów dla bieżącego posiłku i filtra
+
+/** Losuje kolejność, żeby za każdym razem zaczynać od innych propozycji. */
+function reshuffle() {
+  const test = FILTERS.find((f) => f.id === filter).test;
+  order = RECIPES.filter((recipe) => recipe.meal === meal && test(recipe));
+  for (let i = order.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  page = 0;
+}
 const added = new Map(); // id przepisu → komunikat po dodaniu składników
 
 const shoppingNames = () => new Set(state.shop.filter((i) => !i.done).map((i) => plain(i.name)));
@@ -60,12 +88,12 @@ function addToShoppingList(recipe) {
 
 export function init() {
   onAction($('mealChips'), {
-    pick(_, button) {
-      meal = button.dataset.value;
-      page = 0;
-      render();
-    },
+    pick(_, button) { meal = button.dataset.value; reshuffle(); render(); },
   });
+  onAction($('recipeFilters'), {
+    pick(_, button) { filter = button.dataset.value; reshuffle(); render(); },
+  });
+  reshuffle();
   $('moreRecipes').addEventListener('click', () => { page += 1; render(); });
   onAction($('recipeList'), {
     add(id) { addToShoppingList(RECIPES.find((recipe) => recipe.id === id)); },
@@ -76,8 +104,8 @@ export function init() {
 function recipeCard(view) {
   const recipe = RECIPES.find((r) => r.id === view.key);
   const item = el('li', 'recipe');
-  const meta = `${recipe.minutes} min · ${recipe.items.length} ${plural(recipe.items.length, 'składnik', 'składniki', 'składników')}`;
-  item.append(el('h3', 'recipe-name', recipe.name), el('p', 'recipe-meta', view.cost ? `${meta} · do kupienia ok. ${zl(view.cost)}` : meta));
+  const facts = [`${recipe.minutes} min`, CUISINES[recipe.cuisine], recipe.vegetarian && 'bez mięsa', view.cost && `do kupienia ok. ${zl(view.cost)}`];
+  item.append(el('h3', 'recipe-name', recipe.name), el('p', 'recipe-meta', facts.filter(Boolean).join(' · ')));
 
   const list = el('ul', 'recipe-items');
   recipe.items.forEach(([name, amount], i) => {
@@ -108,15 +136,16 @@ function recipeCard(view) {
 }
 
 export function render() {
-  const current = MEALS.find((m) => m.id === meal);
-  const pool = RECIPES.filter((recipe) => recipe.meal === meal);
-  const start = (page * PER_PAGE) % pool.length;
-  const shown = [...pool.slice(start), ...pool.slice(0, start)].slice(0, PER_PAGE);
+  const start = order.length ? (page * PER_PAGE) % order.length : 0;
+  const shown = [...order.slice(start), ...order.slice(0, start)].slice(0, PER_PAGE);
   const onList = shoppingNames();
 
   selectChip($('mealChips'), meal);
-  $('recipeListTitle').textContent = current.title;
-  $('moreRecipes').hidden = pool.length <= PER_PAGE;
+  selectChip($('recipeFilters'), filter);
+  $('recipeListTitle').textContent = MEALS.find((m) => m.id === meal).title;
+  $('recipeCount').textContent = `${order.length} ${plural(order.length, 'przepis', 'przepisy', 'przepisów')}`;
+  $('recipeEmpty').hidden = order.length > 0;
+  $('moreRecipes').hidden = order.length <= PER_PAGE;
   syncList($('recipeList'), shown.map((recipe) => {
     const have = recipe.items.map(([name]) => onList.has(plain(name)));
     const cost = recipe.items.reduce((total, [name], i) => total + (have[i] ? 0 : estimatePrice(name)), 0);

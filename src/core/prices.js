@@ -27,6 +27,19 @@ const PRICES = [
   ['tortill', 7], ['hummus', 8], ['oliwk', 7], ['kukurydz', 4], ['bagietk', 3.5], ['rzodkiewk', 3],
   ['szczypior', 3], ['koncentrat', 4], ['pomidory krojone', 4.5], ['maslo orzechowe', 15], ['pietruszk', 3],
   ['chleb tostowy', 6], ['serek smietankowy', 6],
+  ['makaron udon', 9], ['por', 4], ['makaron ryzowy', 7], ['makaron ramen', 6], ['makaron lasagne', 7], ['mleko kokosowe', 8],
+  ['pasta curry', 9], ['pasta miso', 14], ['krewetk', 25], ['tofu', 8], ['imbir', 3], ['limonk', 2.5],
+  ['kolendr', 4], ['szpinak', 6], ['ciecierzyc', 5], ['fasol', 4], ['soczewic', 6], ['pesto', 9],
+  ['parmezan', 12], ['bazyli', 5], ['gnocchi', 7], ['passat', 5], ['pomidorki', 7], ['baklazan', 6],
+  ['dynia', 6], ['pestki', 6], ['batat', 8], ['kuskus', 5], ['falafel', 10], ['pita', 5], ['nachos', 7],
+  ['salsa', 7], ['sezam', 4], ['bulion', 4], ['ryz arborio', 8], ['granol', 10], ['chia', 9],
+  ['borowk', 9], ['malin', 10], ['syrop klonowy', 18], ['chalk', 6], ['bajg', 4], ['makrel', 8],
+  ['cynamon', 3], ['proszek do pieczenia', 1.5], ['sledz', 9], ['dorsz', 22], ['lopatk', 20],
+  ['zakwas', 5], ['udka', 12], ['groszek', 4], ['ananas', 6], ['wodorost', 9], ['grzank', 4],
+  ['natka', 3], ['koper', 3], ['seler', 4], ['edamame', 9], ['daktyl', 9], ['kakao', 8], ['wiorki', 5],
+  ['wafle', 4], ['bulki do', 6], ['orzeszk', 7], ['oregano', 3], ['kukurydza na popcorn', 5],
+  ['pierogi', 9], ['sos teriyaki', 9], ['sos slodko', 8], ['sos cezar', 8], ['papryka slodka mielona', 3],
+  ['salata rzymska', 6], ['kapusta pekinska', 5], ['kapusta kiszona', 5], ['prazona cebulka', 5],
 ].sort((a, b) => b[0].length - a[0].length);
 
 /** Podpowiedzi nazw w polu produktu. */
