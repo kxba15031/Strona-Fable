@@ -1,9 +1,10 @@
 /* Agent na regułach: gotowe odpowiedzi wyliczane z danych budżetu. */
-import { EXP_CATS } from '../../core/constants.js';
-import { buildPlan, dueList, forecastText, goalNeed } from '../../core/compute.js';
+import { EXP_CATS, expCat } from '../../core/constants.js';
+import { buildPlan, dueList, forecastText, goalNeed, monthSpending } from '../../core/compute.js';
 import { el } from '../../core/dom.js';
-import { daysText, plural, zl } from '../../core/format.js';
+import { daysText, monthLabel, plural, zl } from '../../core/format.js';
 import { state } from '../../core/store.js';
+import { linkButton } from '../../components/buttons.js';
 import { bar } from '../../components/row.js';
 import { bubble, bullets, para } from './chat.js';
 
@@ -147,5 +148,43 @@ function cut(d) {
 /** Odpowiedzi na gotowe pytania (klucze odpowiadają przyciskom pod rozmową). */
 export const answers = { left, plan, invest, cut };
 
+/**
+ * Bilans minionego miesiąca, pokazywany po zmianie miesiąca, dopóki użytkownik go nie zamknie.
+ * Liczby pochodzą z zapisanej historii i z wydatków tamtego miesiąca.
+ */
+function monthSummary(month) {
+  const index = state.history.findIndex((h) => h.month === month);
+  const saved = state.history[index];
+  if (!saved) return [];
+  const { spent, spentByCat } = monthSpending(month);
+  const result = saved.income - saved.fixed - spent;
+  const nodes = [
+    para(['Podsumowanie: '], [monthLabel(month)]),
+    para('Dochód ', [zl(saved.income)], ', stałe koszty ', [zl(saved.fixed)], ', wydatki ', [zl(spent)], '.'),
+    result >= 0
+      ? para('Zostało ', [zl(result)], saved.income > 0 ? ` – ${percent(result / saved.income)} dochodu.` : '.')
+      : para('Zabrakło ', [zl(-result)], ' – wydatki i koszty przekroczyły dochód.'),
+  ];
+
+  const [top] = Object.entries(spentByCat).sort((a, b) => b[1] - a[1]);
+  if (top) nodes.push(para('Najwięcej poszło na: ', [expCat(top[0]).name], ` (${zl(top[1])}, ${percent(top[1] / spent)} wydatków).`));
+
+  const limited = EXP_CATS.filter((c) => state.limits[c.id]);
+  const over = limited.filter((c) => (spentByCat[c.id] || 0) > state.limits[c.id]);
+  if (over.length) nodes.push(para('Przekroczone limity: ', over.map((c) => `${c.name} (o ${zl(spentByCat[c.id] - state.limits[c.id])})`).join(', '), '.'));
+  else if (limited.length) nodes.push(para(`Wszystkie limity (${limited.length}) zostały dotrzymane.`));
+
+  const before = state.history[index - 1];
+  if (before && before.spent !== spent) {
+    const diff = spent - before.spent;
+    nodes.push(para('Wydatki były o ', [zl(Math.abs(diff))], `${diff > 0 ? ' wyższe' : ' niższe'} niż miesiąc wcześniej (${monthLabel(before.month)}).`));
+  }
+  nodes.push(linkButton({ label: 'Zamknij podsumowanie', action: 'dismiss' }));
+  return [bubble(nodes, 'summary')];
+}
+
 /** Raport pokazywany automatycznie po każdej zmianie danych. */
-export const report = (d) => (d.income > 0 && d.left > 0 ? [...left(d), ...plan(d)] : left(d));
+export function report(d) {
+  const current = d.income > 0 && d.left > 0 ? [...left(d), ...plan(d)] : left(d);
+  return state.summaryFor ? [...monthSummary(state.summaryFor), ...current] : current;
+}

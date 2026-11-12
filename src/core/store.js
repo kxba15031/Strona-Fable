@@ -5,6 +5,7 @@ import { clampDay, inMonth, isIsoDate, isIsoMonth, sum, thisMonth, uid } from '.
 
 const emptyState = () => ({
   income: 0, payday: 10, savings: 0, month: '',
+  summaryFor: '', // miniony miesiąc, którego podsumowanie czeka na przeczytanie
   costs: [], paid: [], extras: [], expenses: [], limits: {}, goals: [], history: [],
   shop: [], store: '',
   recipes: { favorites: [], eaten: {}, portions: {}, pantry: [], custom: [] },
@@ -48,6 +49,7 @@ function sanitize(saved) {
   s.savings = amount(saved.savings);
   s.payday = clampDay(saved.payday) || 10;
   s.month = isIsoMonth(saved.month) ? saved.month : '';
+  s.summaryFor = isIsoMonth(saved.summaryFor) ? saved.summaryFor : '';
   s.costs = list(saved.costs).filter((c) => c && Number(c.amount) > 0).map((c) => ({
     id: id(c.id), name: String(c.name || 'Koszt').slice(0, 40), amount: Number(c.amount),
     category: catById(c.category).id, day: clampDay(c.day),
@@ -95,6 +97,7 @@ function rollMonth() {
       state.history = [...state.history.filter((h) => h.month !== prev), entry]
         .sort((a, b) => a.month.localeCompare(b.month))
         .slice(-12);
+      state.summaryFor = prev;
     }
     state.paid = [];
   }

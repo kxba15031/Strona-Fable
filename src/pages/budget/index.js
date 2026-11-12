@@ -184,6 +184,9 @@ export function init() {
   onAction($('questions'), {
     ask(_, button) { reply(ask(button.textContent), answers[button.dataset.value](compute())); },
   });
+  onAction($('chat'), {
+    dismiss() { state.summaryFor = ''; commit(); },
+  });
   initAsk();
 }
 
@@ -293,7 +296,7 @@ export function render(d, info) {
   renderHistory(d);
 
   // Raport agenta odświeża się tylko wtedy, gdy zmieniło się coś, o czym mówi.
-  const basis = JSON.stringify([d, state.costs, state.paid, state.limits, state.goals]);
+  const basis = JSON.stringify([d, state.costs, state.paid, state.limits, state.goals, state.summaryFor]);
   if (basis !== reportedFor) {
     reportedFor = basis;
     scheduleReport(() => report(compute()));

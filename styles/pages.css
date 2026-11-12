@@ -156,3 +156,8 @@
 .row.big .check svg { width: 24px; height: 24px; }
 .row.big .row-title { font-size: 1.12rem; }
 .row.big .row-meta { font-size: .86rem; }
+
+/* ---------- Budżet: podsumowanie miesiąca ---------- */
+.bubble.summary { max-width: 100%; background: var(--green-50); border-color: var(--green-200); }
+.bubble.summary p:first-child { text-transform: capitalize; }
+.bubble.summary .link { display: block; margin: 8px 0 0 -4px; font-size: .86rem; }

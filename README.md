@@ -38,6 +38,7 @@ src/
     format.js           kwoty, daty, odmiana słów
     dom.js              pomocnicze funkcje do budowania i aktualizacji strony
     prices.js           szacunkowe ceny produktów
+    departments.js      działy sklepu i przypisanie do nich produktów
   components/           elementy wielokrotnego użytku
     buttons.js          przyciski: usuń, edytuj, zaznacz, gwiazdka, licznik −/+, link, pastylki
     layout.js           karta, pola formularza (tekst, lista, wyszukiwanie, pole wyboru), podsumowanie
@@ -57,6 +58,7 @@ src/
   features/             funkcje całej strony
     backup.js           kopia zapasowa i czyszczenie danych
     keyboard.js         chowanie klawiatury na telefonie
+    wakeLock.js         blokada wygaszania ekranu (tryb „w sklepie”)
 scripts/build.mjs       buduje wersję jednoplikową
 ```
 
