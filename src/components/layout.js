@@ -27,6 +27,13 @@ export const field = ({ id, label, unit = '', wide = false, type = 'text', mode 
 /** Pole z nazwą (zwykła klawiatura, limit długości). */
 export const nameField = (options) => field({ mode: '', wide: true, attrs: 'maxlength="40"', ...options });
 
+/** Pole wyszukiwania z lupą. */
+export const searchField = ({ id, placeholder, label }) => `
+  <div class="input-wrap search">
+    ${icon('search')}
+    <input id="${id}" type="search" placeholder="${placeholder}" aria-label="${label}" autocomplete="off" maxlength="40">
+  </div>`;
+
 export const selectField = ({ id, label }) => `
   <label class="field">
     <span>${label}</span>

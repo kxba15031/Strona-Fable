@@ -16,10 +16,20 @@ export const FILTERS = [
   { id: 'world', label: 'Kuchnie świata', test: (recipe) => recipe.cuisine && recipe.cuisine !== 'pl' },
 ];
 
-/** Przepisy pasujące do wybranego posiłku i filtra. */
-export function selectRecipes({ meal, filter }) {
+/**
+ * Przepisy pasujące do wyboru. Bez wyszukiwania: wybrany posiłek i filtr.
+ * Z wyszukiwaniem: wszystkie posiłki, szukanie w nazwie i składnikach;
+ * trafienia w nazwie są pierwsze, reszta alfabetycznie.
+ */
+export function selectRecipes({ meal, filter, query }) {
   const { test } = FILTERS.find((f) => f.id === filter);
-  return allRecipes().filter((recipe) => recipe.meal === meal && test(recipe));
+  const phrase = plain(query).trim();
+  if (!phrase) return allRecipes().filter((recipe) => recipe.meal === meal && test(recipe));
+  const inName = (recipe) => plain(recipe.name).includes(phrase);
+  const inItems = (recipe) => recipe.items.some(([name]) => plain(name).includes(phrase));
+  return allRecipes()
+    .filter((recipe) => test(recipe) && (inName(recipe) || inItems(recipe)))
+    .sort((a, b) => Number(inName(b)) - Number(inName(a)) || a.name.localeCompare(b.name, 'pl'));
 }
 
 /**

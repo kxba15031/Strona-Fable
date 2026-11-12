@@ -4,6 +4,7 @@ import { plural, uid } from '../../core/format.js';
 import { estimatePrice } from '../../core/prices.js';
 import { commit, state } from '../../core/store.js';
 import { chipHtml, selectChip } from '../../components/buttons.js';
+import { searchField } from '../../components/layout.js';
 import { openTab } from '../../components/tabs.js';
 import { recipeCard } from './card.js';
 import { MEALS } from './data.js';
@@ -23,6 +24,8 @@ export const template = `
     <div class="chips wrap" id="mealChips" role="group" aria-label="Posiłek">
       ${MEALS.map((meal) => chipHtml({ label: meal.question, value: meal.id })).join('')}
     </div>
+    <h3 class="mini">Albo znajdź konkretne danie</h3>
+    ${searchField({ id: 'recipeSearch', placeholder: 'np. kurczak, makaron, jajka', label: 'Szukaj przepisu po nazwie lub składniku' })}
     <h3 class="mini">Pokaż</h3>
     <div class="chips wrap" id="recipeFilters" role="group" aria-label="Rodzaj przepisów">
       ${FILTERS.map((filter) => chipHtml({ label: filter.label, value: filter.id })).join('')}
@@ -52,15 +55,23 @@ function mealForNow() {
 
 let meal = mealForNow();
 let filter = 'all';
+let query = '';
 let page = 0;
-let order = []; // wylosowana kolejność przepisów dla bieżącego posiłku i filtra
+let order = []; // przepisy pasujące do wyboru, w kolejności pokazywania
 
-/** Losuje kolejność, żeby za każdym razem zaczynać od innych propozycji. */
+const searching = () => query.trim().length >= 2;
+
+/**
+ * Układa propozycje od nowa. Propozycje dla posiłku są losowane, żeby za każdym
+ * razem zaczynać od innych; wyniki wyszukiwania zachowują kolejność trafności.
+ */
 function reshuffle() {
-  order = selectRecipes({ meal, filter });
-  for (let i = order.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [order[i], order[j]] = [order[j], order[i]];
+  order = selectRecipes({ meal, filter, query: searching() ? query : '' });
+  if (!searching()) {
+    for (let i = order.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [order[i], order[j]] = [order[j], order[i]];
+    }
   }
   page = 0;
 }
@@ -80,8 +91,15 @@ function addToShoppingList(recipe) {
 
 export function init() {
   onAction($('mealChips'), {
-    pick(_, button) { meal = button.dataset.value; reshuffle(); render(); },
+    pick(_, button) {
+      meal = button.dataset.value;
+      query = '';
+      $('recipeSearch').value = '';
+      reshuffle();
+      render();
+    },
   });
+  $('recipeSearch').addEventListener('input', (e) => { query = e.target.value; reshuffle(); render(); });
   onAction($('recipeFilters'), {
     pick(_, button) { filter = button.dataset.value; reshuffle(); render(); },
   });
@@ -102,9 +120,9 @@ export function render() {
   const start = order.length ? (page * PER_PAGE) % order.length : 0;
   const shown = [...order.slice(start), ...order.slice(0, start)].slice(0, PER_PAGE);
 
-  selectChip($('mealChips'), meal);
+  selectChip($('mealChips'), searching() ? '' : meal);
   selectChip($('recipeFilters'), filter);
-  $('recipeListTitle').textContent = MEALS.find((m) => m.id === meal).title;
+  $('recipeListTitle').textContent = searching() ? `Wyniki dla „${query.trim()}”` : MEALS.find((m) => m.id === meal).title;
   $('recipeCount').textContent = `${order.length} ${plural(order.length, 'przepis', 'przepisy', 'przepisów')}`;
   $('recipeEmpty').hidden = order.length > 0;
   $('moreRecipes').hidden = order.length <= PER_PAGE;

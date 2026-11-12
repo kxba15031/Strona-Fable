@@ -81,6 +81,8 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
 }
 .input-wrap input::placeholder { color: var(--placeholder); font-weight: 500; }
 .input-wrap em { font-style: normal; font-weight: 700; color: var(--accent-text); margin-left: 8px; }
+.input-wrap.search svg { flex: none; width: 18px; height: 18px; color: var(--muted); margin-right: 10px; }
+.input-wrap.search input::-webkit-search-cancel-button { -webkit-appearance: none; }
 .hint { font-size: .84rem; color: var(--muted); min-height: 1.3em; }
 .hint.ok { color: var(--accent-text); font-weight: 600; }
 .hint.unknown { color: var(--amber-text); }
