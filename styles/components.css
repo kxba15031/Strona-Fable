@@ -190,6 +190,10 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
 .row.stacked > :is(.row-dot, .check, .edit, .del) { grid-row: 1 / span 2; }
 .row.stacked > .row-info { grid-column: 2; grid-row: 1; }
 .row.stacked > .row-amount { grid-column: 2; grid-row: 2; }
+.row-group { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-top: 8px; padding: 0 4px; font-size: .78rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--accent-text); }
+.row-group:first-child { margin-top: 0; }
+.row-group small { font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--muted); font-variant-numeric: tabular-nums; }
+.row-group.done { color: var(--muted); }
 .row.done :is(.row-title, .row-amount) { color: var(--muted); }
 .row.done .row-title { text-decoration: line-through; }
 .row.editing { border-color: var(--yellow-400); background: var(--yellow-100); }

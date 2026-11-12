@@ -1,6 +1,7 @@
 /* Zakładka „Zakupy”: lista zakupów z szacowanymi cenami i linki do gazetek sklepów. */
 import { STORE_LINKS, STORES } from '../../core/constants.js';
 import { shopTotals } from '../../core/compute.js';
+import { departmentOf, departmentOrder } from '../../core/departments.js';
 import { $, countTo, el, need, onAction, syncList } from '../../core/dom.js';
 import { amountText, isoToday, parseAmount, plural, priceText, productsText, uid, zl, zlExact } from '../../core/format.js';
 import { estimatePrice, HINTS } from '../../core/prices.js';
@@ -134,22 +135,44 @@ function renderSummary(d, totals) {
   $('shopNote').textContent = note;
 }
 
+function productRow(row) {
+  const price = inlineInput({ id: `price-${row.key}`, value: row.price ? priceText(row.price) : '', placeholder: '0', label: `Cena za sztukę: ${row.name}` });
+  const meta = [`${amountText(row.qty)} × `, price, ' zł'];
+  if (!row.price) meta.push(el('span', 'tag', 'bez ceny'));
+  else if (row.est) meta.push(el('span', 'tag', 'szac.'));
+  if (row.note) meta.push(el('span', 'row-note', `potrzeba: ${row.note}`));
+  return entryRow({
+    lead: checkButton(`Kupione: ${row.name}`, row.done),
+    title: row.name, meta, amount: zlExact(row.qty * row.price),
+    actions: [deleteButton(`Usuń z listy: ${row.name}`)],
+    className: row.done ? 'done' : '',
+  });
+}
+
+/**
+ * Lista pogrupowana według działów sklepu, w kolejności przejścia przez sklep.
+ * W każdym dziale kupione produkty schodzą na dół.
+ */
 function renderList(totals) {
-  const rows = [...state.shop]
-    .sort((a, b) => Number(a.done) - Number(b.done))
-    .map((i) => ({ key: i.id, name: i.name, qty: i.qty, price: i.price, est: i.est, done: i.done, note: i.note || '' }));
+  const groups = new Map();
+  state.shop.forEach((item) => {
+    const department = departmentOf(item.name);
+    if (!groups.has(department)) groups.set(department, []);
+    groups.get(department).push(item);
+  });
+  const rows = [...groups.keys()].sort((a, b) => departmentOrder(a) - departmentOrder(b)).flatMap((department) => {
+    const items = groups.get(department).sort((a, b) => Number(a.done) - Number(b.done));
+    const left = items.filter((i) => !i.done).length;
+    return [
+      { key: `group-${department.id}`, group: department.name, left, count: items.length },
+      ...items.map((i) => ({ key: i.id, name: i.name, qty: i.qty, price: i.price, est: i.est, done: i.done, note: i.note || '' })),
+    ];
+  });
   syncList($('shopList'), rows, (row) => {
-    const price = inlineInput({ id: `price-${row.key}`, value: row.price ? priceText(row.price) : '', placeholder: '0', label: `Cena za sztukę: ${row.name}` });
-    const meta = [`${amountText(row.qty)} × `, price, ' zł'];
-    if (!row.price) meta.push(el('span', 'tag', 'bez ceny'));
-    else if (row.est) meta.push(el('span', 'tag', 'szac.'));
-    if (row.note) meta.push(el('span', 'row-note', `potrzeba: ${row.note}`));
-    return entryRow({
-      lead: checkButton(`Kupione: ${row.name}`, row.done),
-      title: row.name, meta, amount: zlExact(row.qty * row.price),
-      actions: [deleteButton(`Usuń z listy: ${row.name}`)],
-      className: row.done ? 'done' : '',
-    });
+    if (!row.group) return productRow(row);
+    const header = el('li', `row-group${row.left ? '' : ' done'}`);
+    header.append(el('span', '', row.group), el('small', '', row.left ? `${row.left} z ${row.count}` : 'kupione'));
+    return header;
   });
   $('shopEmpty').hidden = rows.length > 0;
   $('shopActions').hidden = !totals.boughtCount;
