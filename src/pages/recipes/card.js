@@ -1,6 +1,7 @@
 /* Karta jednego przepisu na liście propozycji. */
 import { el } from '../../core/dom.js';
 import { plural, zl } from '../../core/format.js';
+import { starButton } from '../../components/buttons.js';
 import { icon } from '../../components/icons.js';
 import { CUISINES } from './data.js';
 import { findRecipe } from './library.js';
@@ -8,13 +9,15 @@ import { findRecipe } from './library.js';
 const STATUS_LABEL = { list: 'na liście' };
 const products = (n) => `${n} ${plural(n, 'produkt', 'produkty', 'produktów')}`;
 
-/** `view` to dane wiersza z index.js: klucz przepisu, statusy składników, koszt, komunikat. */
+/** `view` to dane wiersza z index.js: klucz przepisu, statusy składników, koszt, ulubiony, komunikat. */
 export function recipeCard(view) {
   const recipe = findRecipe(view.key);
   const card = el('li', 'recipe');
 
   const facts = [`${recipe.minutes} min`, CUISINES[recipe.cuisine], recipe.vegetarian && 'bez mięsa', view.cost && `do kupienia ok. ${zl(view.cost)}`];
-  card.append(el('h3', 'recipe-name', recipe.name), el('p', 'recipe-meta', facts.filter(Boolean).join(' · ')));
+  const head = el('div', 'recipe-head');
+  head.append(el('h3', 'recipe-name', recipe.name), starButton(`Ulubiony: ${recipe.name}`, view.favorite));
+  card.append(head, el('p', 'recipe-meta', facts.filter(Boolean).join(' · ')));
 
   const energy = el('p', 'recipe-kcal');
   energy.append(el('b', '', `ok. ${recipe.kcal} kcal`), ` na porcję · ${recipe.portions} ${plural(recipe.portions, 'porcja', 'porcje', 'porcji')}`);

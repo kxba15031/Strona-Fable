@@ -17,12 +17,17 @@ function actionButton(action, className, label, content) {
 export const deleteButton = (label) => actionButton('delete', 'del', label, '×');
 export const editButton = (label) => actionButton('edit', 'edit', label, icon('edit'));
 
-/** Pole wyboru w formie przycisku (kupione, zapłacone). */
-export function checkButton(label, pressed) {
-  const button = actionButton('toggle', 'check', label, icon('check'));
+/** Przycisk z dwoma stanami; stan niesie atrybut `aria-pressed`. */
+function toggleButton(action, className, iconName, label, pressed) {
+  const button = actionButton(action, className, label, icon(iconName));
   button.setAttribute('aria-pressed', String(pressed));
   return button;
 }
+
+/** Pole wyboru w formie przycisku (kupione, zapłacone). */
+export const checkButton = (label, pressed) => toggleButton('toggle', 'check', 'check', label, pressed);
+/** Gwiazdka „ulubione”. */
+export const starButton = (label, pressed) => toggleButton('favorite', 'star', 'star', label, pressed);
 
 /** Przycisk-pastylka budowany dla danych, np. szybkie wydatki. */
 export function chip({ label, value = '', action = 'pick', title = '' }) {

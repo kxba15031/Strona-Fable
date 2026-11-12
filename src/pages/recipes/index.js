@@ -37,7 +37,7 @@ export const template = `
       </div>
       <button type="button" class="link" id="moreRecipes">Pokaż inne</button>
     </div>
-    <p class="empty" id="recipeEmpty">Nie mam przepisów dla tego wyboru. Zmień filtr powyżej.</p>
+    <p class="empty" id="recipeEmpty">Nie mam przepisów dla tego wyboru. Zmień posiłek lub filtr powyżej.</p>
     <ul class="stack" id="recipeList"></ul>
     <p class="disclaimer">Kalorie to przybliżenie dla jednej porcji; ilości składników dotyczą wszystkich porcji. Koszt to szacunek zakupu całych opakowań składników, których nie masz jeszcze na liście.</p>
   </section>
@@ -89,6 +89,11 @@ export function init() {
   $('moreRecipes').addEventListener('click', () => { page += 1; render(); });
   onAction($('recipeList'), {
     add(id) { addToShoppingList(findRecipe(id)); },
+    favorite(id) {
+      const { favorites } = state.recipes;
+      state.recipes.favorites = favorites.includes(id) ? favorites.filter((fav) => fav !== id) : [...favorites, id];
+      commit();
+    },
     shop() { openTab('shop'); },
   });
 }
@@ -105,6 +110,9 @@ export function render() {
   $('moreRecipes').hidden = order.length <= PER_PAGE;
   syncList($('recipeList'), shown.map((recipe) => {
     const statuses = itemStatuses(recipe);
-    return { key: recipe.id, statuses, cost: missingCost(recipe, statuses), note: added.get(recipe.id) || '' };
+    return {
+      key: recipe.id, statuses, cost: missingCost(recipe, statuses), note: added.get(recipe.id) || '',
+      favorite: state.recipes.favorites.includes(recipe.id),
+    };
   }), recipeCard);
 }

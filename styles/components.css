@@ -111,7 +111,7 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
 .link { border: 0; background: none; cursor: pointer; color: var(--accent-text); font-weight: 700; text-decoration: underline; padding: 4px; }
 .cancel-edit { justify-self: center; }
 
-.del, .edit {
+.del, .edit, .star {
   flex: none; width: 34px; height: 34px; border-radius: 50%; padding: 0;
   border: 0; cursor: pointer; background: var(--green-50); color: var(--muted);
   display: grid; place-items: center; font-size: 1.15rem; line-height: 1;
@@ -119,7 +119,10 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
 }
 .edit svg { width: 15px; height: 15px; }
 .del:hover { background: var(--danger-bg); color: var(--danger); transform: rotate(90deg); }
-.edit:hover { background: var(--yellow-100); color: var(--amber-text); }
+.edit:hover, .star:hover { background: var(--yellow-100); color: var(--amber-text); }
+.star svg { width: 17px; height: 17px; transition: fill .25s, transform .3s var(--ease); }
+.star[aria-pressed="true"] { background: var(--yellow-100); color: var(--yellow-500); }
+.star[aria-pressed="true"] svg { fill: currentColor; transform: scale(1.1); }
 
 .check {
   flex: none; width: 26px; height: 26px; border-radius: 9px; cursor: pointer; padding: 0;
