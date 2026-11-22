@@ -4,10 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#16a34a">
-  <meta name="description" content="Grosik – prosty menedżer finansów: wypłata, stałe koszty i agent, który podpowie, co zrobić z resztą pieniędzy.">
-  <title>Grosik – Twoje finanse pod kontrolą</title>
+  <meta name="description" content="Grosik – menedżer finansów: budżet z agentem, wydatki, cele oszczędnościowe, lista zakupów i przepisy.">
+  <title>Grosik</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%2316a34a'/%3E%3Ccircle cx='32' cy='32' r='20' fill='%23facc15'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Grosik">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/base.css">
+  <link rel="stylesheet" href="styles/components.css">
+  <link rel="stylesheet" href="styles/pages.css">
 </head>
 <body>
   <div class="bg" aria-hidden="true">
@@ -16,261 +24,52 @@
     <span class="blob blob-3"></span>
   </div>
 
+  <!-- Ekran logowania do wspólnych danych (src/features/sync) -->
+  <div class="login" id="login" hidden></div>
+
   <header class="topbar">
     <a class="brand" href="#top">
       <span class="brand-mark" aria-hidden="true"><span></span></span>
       <span class="brand-name">Grosik</span>
     </a>
     <span class="month" id="monthLabel"></span>
+    <button type="button" class="theme-toggle" id="themeToggle" aria-label="Przełącz tryb ciemny" aria-pressed="false">
+      <svg class="moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
+      <svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M12 2v2 M12 20v2 M4 12H2 M22 12h-2 M5 5l1.5 1.5 M17.5 17.5L19 19 M19 5l-1.5 1.5 M6.5 17.5L5 19"/></svg>
+    </button>
     <nav class="tabs" role="tablist" aria-label="Sekcje">
-      <button type="button" class="tab active" role="tab" id="tab-budget" data-view="budget" aria-selected="true" aria-controls="view-budget">Budżet</button>
-      <button type="button" class="tab" role="tab" id="tab-shop" data-view="shop" aria-selected="false" aria-controls="view-shop">Zakupy</button>
+      <button type="button" class="tab" role="tab" id="tab-budget" data-view="budget" aria-controls="view-budget">Budżet</button>
+      <button type="button" class="tab" role="tab" id="tab-spend" data-view="spend" aria-controls="view-spend">Wydatki</button>
+      <button type="button" class="tab" role="tab" id="tab-goals" data-view="goals" aria-controls="view-goals">Cele</button>
+      <button type="button" class="tab" role="tab" id="tab-shop" data-view="shop" aria-controls="view-shop">Zakupy</button>
+      <button type="button" class="tab" role="tab" id="tab-recipes" data-view="recipes" aria-controls="view-recipes">Przepisy</button>
     </nav>
   </header>
 
+  <!-- Treść zakładek wstawiają moduły z src/pages -->
   <main id="top">
-  <div class="layout" id="view-budget" role="tabpanel" aria-labelledby="tab-budget">
-    <!-- Podsumowanie -->
-    <section class="hero reveal" aria-labelledby="heroTitle">
-      <div class="hero-shine" aria-hidden="true"></div>
-      <p class="hero-label" id="heroTitle">Zostaje Ci w tym miesiącu</p>
-      <p class="hero-amount" id="leftAmount">0,00 zł</p>
-      <div class="meter" role="img" aria-label="Udział stałych kosztów w wypłacie">
-        <div class="meter-fill" id="meterFill"></div>
-      </div>
-      <p class="meter-note" id="meterNote">Dodaj wypłatę, aby zacząć</p>
-      <div class="hero-stats">
-        <div class="stat">
-          <span class="stat-label">Wypłata</span>
-          <span class="stat-value" id="statIncome">0 zł</span>
-        </div>
-        <div class="stat">
-          <span class="stat-label">Stałe koszty</span>
-          <span class="stat-value" id="statCosts">0 zł</span>
-        </div>
-        <div class="stat">
-          <span class="stat-label">Do wypłaty</span>
-          <span class="stat-value" id="statDays">–</span>
-        </div>
-      </div>
-    </section>
-
-    <!-- Agent -->
-    <section class="card agent reveal" aria-labelledby="agentTitle">
-      <div class="card-head">
-        <div class="agent-avatar" aria-hidden="true">
-          <span class="eye"></span><span class="eye"></span>
-        </div>
-        <div>
-          <h2 id="agentTitle">Agent Grosik</h2>
-          <p class="sub"><span class="dot"></span> analizuje Twój budżet na bieżąco</p>
-        </div>
-      </div>
-      <div class="chat" id="chat" aria-live="polite"></div>
-      <div class="chips" id="chips">
-        <button type="button" class="chip" data-q="left">Ile mi zostało?</button>
-        <button type="button" class="chip" data-q="plan">Na co przeznaczyć?</button>
-        <button type="button" class="chip" data-q="invest">W co zainwestować?</button>
-        <button type="button" class="chip" data-q="cut">Jak ograniczyć koszty?</button>
-      </div>
-      <p class="disclaimer">Podpowiedzi mają charakter edukacyjny i nie są rekomendacją inwestycyjną.</p>
-    </section>
-
-    <!-- Wypłata -->
-    <section class="card reveal" aria-labelledby="incomeTitle">
-      <div class="card-head">
-        <span class="icon icon-yellow" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M3 7h18v12H3z M3 11h18 M7 15h4"/></svg>
-        </span>
-        <div>
-          <h2 id="incomeTitle">Twoja wypłata</h2>
-          <p class="sub">Kwota „na rękę”, którą dostajesz co miesiąc</p>
-        </div>
-      </div>
-      <div class="fields">
-        <label class="field field-wide">
-          <span>Wypłata netto</span>
-          <div class="input-wrap">
-            <input id="income" type="text" inputmode="decimal" placeholder="np. 6500" autocomplete="off">
-            <em>zł</em>
-          </div>
-        </label>
-        <label class="field">
-          <span>Dzień wypłaty</span>
-          <div class="input-wrap">
-            <input id="payday" type="number" inputmode="numeric" min="1" max="31" placeholder="10">
-          </div>
-        </label>
-        <label class="field">
-          <span>Twoje oszczędności</span>
-          <div class="input-wrap">
-            <input id="savings" type="text" inputmode="decimal" placeholder="np. 5000" autocomplete="off">
-            <em>zł</em>
-          </div>
-        </label>
-      </div>
-    </section>
-
-    <!-- Stałe koszty -->
-    <section class="card reveal" aria-labelledby="costsTitle">
-      <div class="card-head">
-        <span class="icon icon-green" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z M9 8h6 M9 12h6"/></svg>
-        </span>
-        <div>
-          <h2 id="costsTitle">Stałe koszty</h2>
-          <p class="sub">Czynsz, rachunki, raty, subskrypcje…</p>
-        </div>
-      </div>
-
-      <form class="add-form" id="costForm" novalidate>
-        <label class="field field-wide">
-          <span>Nazwa</span>
-          <div class="input-wrap">
-            <input id="costName" type="text" placeholder="np. Czynsz" maxlength="40" autocomplete="off">
-          </div>
-        </label>
-        <label class="field">
-          <span>Kwota</span>
-          <div class="input-wrap">
-            <input id="costAmount" type="text" inputmode="decimal" placeholder="0" autocomplete="off">
-            <em>zł</em>
-          </div>
-        </label>
-        <label class="field">
-          <span>Kategoria</span>
-          <div class="input-wrap">
-            <select id="costCategory"></select>
-          </div>
-        </label>
-        <button class="btn" type="submit">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14 M5 12h14"/></svg>
-          Dodaj koszt
-        </button>
-      </form>
-
-      <ul class="cost-list" id="costList"></ul>
-      <p class="empty" id="costEmpty">Nie masz jeszcze żadnych kosztów. Dodaj pierwszy powyżej.</p>
-    </section>
-
-    <!-- Struktura kosztów -->
-    <section class="card reveal" aria-labelledby="chartTitle">
-      <div class="card-head">
-        <span class="icon icon-yellow" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9h-9z M15 3.5A9 9 0 0 1 20.5 9H15z"/></svg>
-        </span>
-        <div>
-          <h2 id="chartTitle">Na co idą pieniądze</h2>
-          <p class="sub">Podział stałych kosztów według kategorii</p>
-        </div>
-      </div>
-      <div class="chart">
-        <div class="donut-wrap">
-          <svg class="donut" id="donut" viewBox="0 0 120 120" role="img" aria-label="Wykres kosztów według kategorii"></svg>
-          <div class="donut-center">
-            <span>Razem</span>
-            <strong id="donutTotal">0 zł</strong>
-          </div>
-        </div>
-        <ul class="legend" id="legend"></ul>
-      </div>
-    </section>
-  </div>
-
-  <div class="layout" id="view-shop" role="tabpanel" aria-labelledby="tab-shop" hidden>
-    <!-- Podsumowanie zakupów -->
-    <section class="hero reveal" aria-labelledby="shopHeroTitle">
-      <div class="hero-shine" aria-hidden="true"></div>
-      <p class="hero-label" id="shopHeroTitle">Szacowany koszt zakupów</p>
-      <p class="hero-amount" id="shopTotal">0,00 zł</p>
-      <div class="meter" role="img" aria-label="Ile z listy jest już w koszyku">
-        <div class="meter-fill" id="shopMeter"></div>
-      </div>
-      <p class="meter-note" id="shopNote">Dodaj pierwszy produkt do listy</p>
-      <div class="hero-stats">
-        <div class="stat">
-          <span class="stat-label">Do kupienia</span>
-          <span class="stat-value" id="shopToBuy">0 zł</span>
-        </div>
-        <div class="stat">
-          <span class="stat-label">W koszyku</span>
-          <span class="stat-value" id="shopDone">0 zł</span>
-        </div>
-        <div class="stat">
-          <span class="stat-label">Zostanie Ci</span>
-          <span class="stat-value" id="shopAfter">–</span>
-        </div>
-      </div>
-    </section>
-
-    <!-- Lista zakupów -->
-    <section class="card reveal" aria-labelledby="shopTitle">
-      <div class="card-head">
-        <span class="icon icon-green" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M4 5h2l2 11h10l2-8H7 M9 20h.01 M17 20h.01"/></svg>
-        </span>
-        <div>
-          <h2 id="shopTitle">Lista zakupów</h2>
-          <p class="sub">Cenę podpowiem sam – możesz ją zawsze poprawić</p>
-        </div>
-      </div>
-
-      <form class="add-form" id="shopForm" novalidate>
-        <label class="field field-wide">
-          <span>Produkt</span>
-          <div class="input-wrap">
-            <input id="shopName" type="text" placeholder="np. Mleko" maxlength="40" autocomplete="off" list="shopHints">
-            <datalist id="shopHints"></datalist>
-          </div>
-        </label>
-        <label class="field">
-          <span>Ilość</span>
-          <div class="input-wrap">
-            <input id="shopQty" type="text" inputmode="decimal" value="1" autocomplete="off">
-            <em>szt.</em>
-          </div>
-        </label>
-        <label class="field">
-          <span>Cena za sztukę</span>
-          <div class="input-wrap">
-            <input id="shopPrice" type="text" inputmode="decimal" placeholder="szacuję…" autocomplete="off">
-            <em>zł</em>
-          </div>
-        </label>
-        <button class="btn" type="submit">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14 M5 12h14"/></svg>
-          Dodaj do listy
-        </button>
-      </form>
-
-      <ul class="cost-list" id="shopList"></ul>
-      <p class="empty" id="shopEmpty">Lista jest pusta. Dodaj produkty powyżej.</p>
-      <button type="button" class="link clear-done" id="shopClearDone" hidden>Usuń kupione z listy</button>
-    </section>
-
-    <!-- Promocje -->
-    <section class="card reveal" aria-labelledby="promoTitle">
-      <div class="card-head">
-        <span class="icon icon-yellow" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z M7.5 8.5h.01"/></svg>
-        </span>
-        <div>
-          <h2 id="promoTitle">Promocje w sklepach</h2>
-          <p class="sub">Wybierz sklep i sprawdź aktualne oferty na produkty z listy</p>
-        </div>
-      </div>
-      <div class="chips store-chips" id="storeChips" role="group" aria-label="Sklep"></div>
-      <div class="promo-list" id="promoList"></div>
-      <p class="disclaimer">Linki otwierają aktualne wyniki wyszukiwania promocji i gazetek w nowej karcie.</p>
-    </section>
-  </div>
+    <div class="layout" id="view-budget" role="tabpanel" aria-labelledby="tab-budget"></div>
+    <div class="layout" id="view-spend" role="tabpanel" aria-labelledby="tab-spend" hidden></div>
+    <div class="layout" id="view-goals" role="tabpanel" aria-labelledby="tab-goals" hidden></div>
+    <div class="layout" id="view-shop" role="tabpanel" aria-labelledby="tab-shop" hidden></div>
+    <div class="layout" id="view-recipes" role="tabpanel" aria-labelledby="tab-recipes" hidden></div>
   </main>
 
   <footer class="footer">
-    Dane zapisują się wyłącznie w Twojej przeglądarce.
-    <button type="button" class="link" id="resetBtn">Wyczyść dane</button>
+    <p id="footerNote">Dane zapisują się wyłącznie w Twojej przeglądarce. Zrób kopię, żeby ich nie stracić.</p>
+    <div class="sync-box" id="syncBox" hidden>
+      <p id="syncNote" aria-live="polite"></p>
+      <p id="accountBox" hidden>Zalogowano: <strong id="accountEmail"></strong> · <button type="button" class="link" id="signOutBtn">Wyloguj</button></p>
+    </div>
+    <p class="footer-actions">
+      <button type="button" class="link" id="exportBtn">Pobierz kopię</button>
+      <label class="link" for="importFile">Wczytaj kopię</label>
+      <input type="file" id="importFile" accept=".json,application/json" class="visually-hidden">
+      <button type="button" class="link" id="resetBtn">Wyczyść dane</button>
+    </p>
+    <p id="backupNote" aria-live="polite"></p>
   </footer>
 
-  <script src="app.js"></script>
+  <script type="module" src="src/main.js"></script>
 </body>
 </html>

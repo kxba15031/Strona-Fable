@@ -1,0 +1,63 @@
+/* Kolory i wspólne wartości. Tryb ciemny podmienia tylko te zmienne. */
+:root {
+  --green-900: #14532d;
+  --green-700: #15803d;
+  --green-600: #16a34a;
+  --green-500: #22c55e;
+  --green-200: #bbf7d0;
+  --green-100: #dcfce7;
+  --green-50: #f0fdf4;
+  --yellow-500: #eab308;
+  --yellow-400: #facc15;
+  --yellow-200: #fef08a;
+  --yellow-100: #fef9c3;
+
+  --page: #ffffff;
+  --surface: #ffffff;
+  --card: rgba(255, 255, 255, .92);
+  --topbar: rgba(255, 255, 255, .78);
+  --ink: #12261a;
+  --muted: #5f7367;
+  --placeholder: #a3b5a9;
+  --line: #e6efe8;
+  --accent-text: #15803d;
+  --amber-text: #92400e;
+  --danger: #dc2626;
+  --danger-bg: #fee2e2;
+  --danger-line: #fca5a5;
+  --chart-bar: #16a34a;
+  --chart-track: #eef7f0;
+  --blob-opacity: .55;
+
+  --radius: 22px;
+  --shadow: 0 10px 30px -12px rgba(21, 128, 61, .22), 0 2px 6px rgba(18, 38, 26, .04);
+  --ease: cubic-bezier(.22, 1, .36, 1);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --green-200: #2c5139;
+  --green-100: #1a3024;
+  --green-50: #13221a;
+  --yellow-200: #5c4f14;
+  --yellow-100: #3a3210;
+
+  --page: #0d1711;
+  --surface: #17261d;
+  --card: rgba(23, 38, 29, .94);
+  --topbar: rgba(13, 23, 17, .82);
+  --ink: #e8f3ec;
+  --muted: #9db3a5;
+  --placeholder: #5f7367;
+  --line: #26392d;
+  --accent-text: #4ade80;
+  --amber-text: #fcd34d;
+  --danger: #f87171;
+  --danger-bg: #3b1414;
+  --danger-line: #7f1d1d;
+  --chart-bar: #22c55e;
+  --chart-track: #1d3327;
+  --blob-opacity: .16;
+
+  --shadow: 0 10px 30px -12px rgba(0, 0, 0, .6), 0 2px 6px rgba(0, 0, 0, .3);
+}
