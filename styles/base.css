@@ -114,3 +114,13 @@ button, input, select { font: inherit; color: inherit; }
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
   html { scroll-behavior: auto; }
 }
+
+/* ---------- Logowanie do wspólnych danych ---------- */
+body.locked :is(.topbar, main, .footer) { display: none; }
+.login { min-height: 100vh; min-height: 100dvh; display: grid; place-items: center; padding: 24px 16px calc(24px + env(safe-area-inset-bottom)); }
+.login-card { width: min(420px, 100%); display: grid; gap: 12px; }
+.login-card h2 { font-size: 1.4rem; }
+.login-brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.15rem; }
+.login-card .fields { margin-top: 4px; }
+.sync-box { display: grid; gap: 4px; }
+.sync-box p:empty { display: none; }

@@ -7,6 +7,11 @@
   <meta name="description" content="Grosik – menedżer finansów: budżet z agentem, wydatki, cele oszczędnościowe, lista zakupów i przepisy.">
   <title>Grosik</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%2316a34a'/%3E%3Ccircle cx='32' cy='32' r='20' fill='%23facc15'/%3E%3C/svg%3E">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Grosik">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="stylesheet" href="styles/tokens.css">
   <link rel="stylesheet" href="styles/base.css">
   <link rel="stylesheet" href="styles/components.css">
@@ -18,6 +23,9 @@
     <span class="blob blob-2"></span>
     <span class="blob blob-3"></span>
   </div>
+
+  <!-- Ekran logowania do wspólnych danych (src/features/sync) -->
+  <div class="login" id="login" hidden></div>
 
   <header class="topbar">
     <a class="brand" href="#top">
@@ -48,7 +56,11 @@
   </main>
 
   <footer class="footer">
-    <p>Dane zapisują się wyłącznie w Twojej przeglądarce. Zrób kopię, żeby ich nie stracić.</p>
+    <p id="footerNote">Dane zapisują się wyłącznie w Twojej przeglądarce. Zrób kopię, żeby ich nie stracić.</p>
+    <div class="sync-box" id="syncBox" hidden>
+      <p id="syncNote" aria-live="polite"></p>
+      <p id="accountBox" hidden>Zalogowano: <strong id="accountEmail"></strong> · <button type="button" class="link" id="signOutBtn">Wyloguj</button></p>
+    </div>
     <p class="footer-actions">
       <button type="button" class="link" id="exportBtn">Pobierz kopię</button>
       <label class="link" for="importFile">Wczytaj kopię</label>

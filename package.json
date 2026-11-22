@@ -5,9 +5,11 @@
   "description": "Menedżer finansów: budżet z agentem, wydatki, cele oszczędnościowe i lista zakupów.",
   "scripts": {
     "start": "npx --yes serve .",
-    "build": "node scripts/build.mjs"
+    "build": "node scripts/build.mjs",
+    "vendor": "node scripts/vendor.mjs"
   },
   "devDependencies": {
+    "@supabase/supabase-js": "^2.119.2",
     "esbuild": "^0.25.0"
   }
 }

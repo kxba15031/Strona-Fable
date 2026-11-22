@@ -41,3 +41,7 @@ export const STORE_LINKS = {
   Dino: 'https://marketdino.pl/gazetki/lista/standard',
 };
 export const STORES = Object.keys(STORE_LINKS);
+
+/** Wspólna baza danych (Supabase). Klucz jest publiczny – dostęp chronią reguły bazy (RLS). */
+export const SUPABASE_URL = 'https://vuuupdddmqdzntvaltjb.supabase.co';
+export const SUPABASE_KEY = 'sb_publishable_LJh_TfNcpTGKatHSnLyIiQ_KfqPlAR3';

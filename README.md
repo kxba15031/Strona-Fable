@@ -2,7 +2,17 @@
 
 Menedżer finansów działający w całości w przeglądarce: budżet z agentem, codzienne wydatki
 z limitami i wykresami, cele oszczędnościowe, kalkulator inwestycji, lista zakupów i przepisy.
-Dane zapisują się lokalnie w przeglądarce (`localStorage`).
+Na stronie www (GitHub Pages) dane są wspólne dla domowników: zapisują się w bazie Supabase
+i synchronizują na żywo, a w przeglądarce zostaje kopia do pracy bez internetu. W podglądzie
+Claude i w pliku otwartym z dysku dane zostają tylko lokalnie (`localStorage`).
+
+## Wspólne dane (Supabase)
+
+- Adres projektu i klucz publiczny są w `src/core/constants.js` (`SUPABASE_URL`, `SUPABASE_KEY`).
+- Wszystkie dane domu to jeden wiersz `shared_state` (`id = 'home'`, kolumna `data` z JSON-em).
+- Dostęp mają tylko adresy z tabeli `members` – pilnują tego reguły RLS w bazie.
+- Logowanie: link albo 6-cyfrowy kod z maila (kod przydaje się w aplikacji z ekranu głównego).
+- Przy jednoczesnej edycji wygrywa zapis wysłany później.
 
 ## Uruchomienie
 
@@ -59,7 +69,13 @@ src/
     backup.js           kopia zapasowa i czyszczenie danych
     keyboard.js         chowanie klawiatury na telefonie
     wakeLock.js         blokada wygaszania ekranu (tryb „w sklepie”)
+    offline.js          rejestracja sw.js (praca bez internetu, instalacja na telefonie)
+    sync/               wspólne dane: client.js (Supabase), login.js (logowanie), index.js (synchronizacja)
+  vendor/supabase.js    biblioteka Supabase w jednym pliku (npm run vendor)
+sw.js                   service worker: najpierw sieć, bez internetu pliki z pamięci
+manifest.webmanifest    dane aplikacji na ekran główny, icons/ – ikony
 scripts/build.mjs       buduje wersję jednoplikową
+scripts/vendor.mjs      pakuje bibliotekę Supabase do src/vendor
 ```
 
 Każda zakładka eksportuje to samo: `template` (HTML), `init()` (podpięcie zdarzeń)
