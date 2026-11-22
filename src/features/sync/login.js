@@ -1,4 +1,7 @@
-/* Ekran logowania: mail, potem link z wiadomości albo 6-cyfrowy kod (wygodny w aplikacji z ekranu głównego). */
+/*
+ * Ekran logowania: mail, potem kliknięcie linku z wiadomości. W aplikacji z ekranu głównego
+ * (iPhone otwiera link w Safari) można wkleić skopiowany link albo wpisać kod z maila.
+ */
 import { $ } from '../../core/dom.js';
 import { field } from '../../components/layout.js';
 import { submitButton } from '../../components/buttons.js';
@@ -13,7 +16,7 @@ const template = `
       ${submitButton('Wyślij link', { iconName: 'check' })}
     </form>
     <form class="fields" id="loginCodeForm" novalidate hidden>
-      ${field({ id: 'loginCode', label: 'Kod z maila', mode: 'numeric', wide: true, placeholder: '123456', attrs: 'maxlength="10" autocomplete="one-time-code"' })}
+      ${field({ id: 'loginCode', label: 'Skopiowany link albo kod z maila', mode: '', wide: true, placeholder: 'https://… albo 123456', attrs: 'autocapitalize="off" autocomplete="one-time-code"' })}
       ${submitButton('Zaloguj', { iconName: 'check' })}
       <button type="button" class="link" id="loginBack">Zmień adres e-mail</button>
     </form>
@@ -22,7 +25,7 @@ const template = `
 
 const ERRORS = [
   [/rate limit|too many|seconds/i, 'Za dużo prób. Odczekaj chwilę i spróbuj ponownie.'],
-  [/expired|invalid/i, 'Kod jest nieprawidłowy albo wygasł. Wyślij nowy link.'],
+  [/expired|invalid/i, 'Link albo kod jest nieprawidłowy lub wygasł. Wyślij nowy link.'],
   [/fetch|network/i, 'Brak połączenia z internetem.'],
 ];
 const errorText = (error) => (ERRORS.find(([re]) => re.test(error && error.message)) || [0, 'Nie udało się. Spróbuj ponownie.'])[1];
@@ -30,13 +33,25 @@ const errorText = (error) => (ERRORS.find(([re]) => re.test(error && error.messa
 /** Link z maila ma prowadzić z powrotem na tę samą stronę (bez #tokenów). */
 const redirectUrl = () => window.location.href.split('#')[0];
 
+/** Dane do weryfikacji z wklejonego linku (parametr `token`) albo z samego kodu cyfrowego. */
+function otpParams(input) {
+  const value = input.trim();
+  const match = value.match(/[?&]token=([^&#\s]+)/);
+  if (match) {
+    const type = (value.match(/[?&]type=([a-z_]+)/) || [])[1] || 'email';
+    return { token_hash: decodeURIComponent(match[1]), type };
+  }
+  const token = value.replace(/\D/g, '');
+  return token.length >= 6 ? { email, token, type: 'email' } : null;
+}
+
 let email = '';
 
 function step(codeStep) {
   $('loginEmailForm').hidden = codeStep;
   $('loginCodeForm').hidden = !codeStep;
   $('loginSub').textContent = codeStep
-    ? `Wysłaliśmy wiadomość na ${email}. Kliknij link w mailu albo wpisz kod tutaj.`
+    ? `Wysłaliśmy wiadomość na ${email}. Kliknij link w mailu. Jeśli używasz aplikacji z ekranu głównego, przytrzymaj link w mailu, skopiuj go i wklej tutaj.`
     : 'Wasze wspólne dane są w chmurze. Podaj mail, a wyślemy Ci link do logowania.';
 }
 
@@ -73,11 +88,11 @@ export function initLogin(getClient) {
 
   $('loginCodeForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const token = $('loginCode').value.replace(/\D/g, '');
-    if (token.length < 6) { note('Kod ma co najmniej 6 cyfr.'); return; }
-    note('Sprawdzam kod…');
+    const params = otpParams($('loginCode').value);
+    if (!params) { note('Wklej cały link z maila (zaczyna się od https://).'); return; }
+    note('Sprawdzam…');
     const client = await getClient();
-    const { error } = await client.auth.verifyOtp({ email, token, type: 'email' });
+    const { error } = await client.auth.verifyOtp(params);
     note(error ? errorText(error) : '');
   });
 
