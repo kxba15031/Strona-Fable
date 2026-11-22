@@ -11,7 +11,7 @@ Claude i w pliku otwartym z dysku dane zostają tylko lokalnie (`localStorage`).
 - Adres projektu i klucz publiczny są w `src/core/constants.js` (`SUPABASE_URL`, `SUPABASE_KEY`).
 - Wszystkie dane domu to jeden wiersz `shared_state` (`id = 'home'`, kolumna `data` z JSON-em).
 - Dostęp mają tylko adresy z tabeli `members` – pilnują tego reguły RLS w bazie.
-- Logowanie: link albo 6-cyfrowy kod z maila (kod przydaje się w aplikacji z ekranu głównego).
+- Logowanie: jedno wspólne konto (mail i hasło) założone w panelu Supabase; telefon pamięta sesję.
 - Przy jednoczesnej edycji wygrywa zapis wysłany później.
 
 ## Uruchomienie

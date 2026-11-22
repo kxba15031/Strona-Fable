@@ -138,9 +138,6 @@ function onSession(session) {
   showAccount(session);
   if (signedIn) return;
   signedIn = true;
-  if (window.location.hash.includes('access_token')) {
-    window.history.replaceState(null, '', window.location.href.split('#')[0]);
-  }
   reconcile().then(startRealtime);
 }
 
